@@ -1,0 +1,55 @@
+.ellipsis {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.outline {
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.outline:hover {
+  border-color: var(--border-strong);
+}
+
+.textButton {
+  font-size: var(--font-sm);
+}
+
+.textButton:hover {
+  background: var(--surface-3);
+}
+
+.fieldChevron {
+  position: absolute;
+  right: 11px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-3);
+  pointer-events: none;
+}
+
+@keyframes shimmer {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.shape {
+  display: inline-block;
+  flex: none;
+  max-width: 100%;
+  border-radius: var(--radius-xs);
+  background: var(--surface-3);
+  animation: shimmer var(--dur-shimmer) ease-in-out infinite;
+}

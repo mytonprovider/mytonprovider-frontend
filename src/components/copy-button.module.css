@@ -1,0 +1,9 @@
+.copied.copied,
+.copied.copied:hover {
+  color: var(--tone-green-text);
+}
+
+.icon {
+  width: var(--icon-sm);
+  height: var(--icon-sm);
+}

@@ -1,0 +1,277 @@
+.details {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  padding: 14px var(--space-6) 18px;
+}
+
+.statusCard {
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: var(--surface-2);
+}
+
+.bar {
+  display: flex;
+  height: 6px;
+  background: var(--surface-3);
+}
+
+.barSegment {
+  display: block;
+  background: var(--tone);
+}
+
+.statusBody {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--space-4) var(--space-5);
+  padding: var(--row-py) 14px;
+}
+
+.statusMain {
+  flex: 1;
+  min-width: 180px;
+}
+
+.statusLabel {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.dot {
+  width: var(--space-3);
+  height: var(--space-3);
+  flex: none;
+  border-radius: var(--radius-pill);
+  background: var(--tone);
+}
+
+.statusText {
+  font-size: var(--font-base);
+  font-weight: 600;
+  color: var(--tone-text);
+}
+
+.statusRatio {
+  font-size: var(--font-sm);
+  font-weight: 400;
+  color: var(--tone-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.description {
+  margin: var(--space-2) 0 0;
+  font-size: var(--font-sm);
+  color: var(--text-2);
+  text-wrap: pretty;
+}
+
+.checks {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--space-2);
+  flex: none;
+  margin-left: auto;
+}
+
+.checksRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.checksLabel {
+  font-size: var(--font-xs);
+  color: var(--text-3);
+}
+
+.checksValue {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-05);
+  font-size: var(--font-sm);
+  font-weight: 600;
+}
+
+.badgeValid {
+  padding: 2px var(--space-3);
+  border-radius: var(--radius-xs);
+  background: var(--tone-weak);
+  color: var(--tone-text);
+}
+
+.slash {
+  color: var(--text-3);
+  font-weight: 400;
+}
+
+.badgeTotal {
+  padding: 2px var(--space-3);
+  border-radius: var(--radius-xs);
+  background: var(--surface-3);
+  color: var(--text-2);
+}
+
+.toggle {
+  composes: textButton from "./shared.module.css";
+  height: var(--control-sm);
+  padding: 0 var(--space-4);
+  margin-right: calc(-1 * var(--space-4));
+  border-radius: var(--radius-pill);
+  color: var(--accent-text);
+  font-weight: 500;
+}
+
+.legend {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-25);
+  padding: 0 14px var(--row-py);
+}
+
+.legendRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: var(--font-sm);
+}
+
+.legendDot {
+  width: var(--space-35);
+  height: var(--space-35);
+  flex: none;
+  border-radius: var(--radius-pill);
+  background: var(--tone);
+}
+
+.legendLabel {
+  color: var(--text-2);
+  text-wrap: pretty;
+}
+
+.spacer {
+  composes: spacer from "./shared.module.css";
+  min-width: var(--space-5);
+}
+
+.legendMeta {
+  font-size: var(--font-xs);
+  color: var(--text-3);
+  white-space: nowrap;
+}
+
+.groups {
+  columns: 300px auto;
+  column-gap: var(--space-5);
+}
+
+.section {
+  margin: 0 0 var(--space-5);
+  padding: var(--row-py) 15px;
+  border-radius: var(--radius-lg);
+  background: var(--surface-2);
+  break-inside: avoid;
+}
+
+.sectionTitle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-25);
+  margin: 0 0 var(--space-4);
+}
+
+.sectionIcon {
+  width: var(--icon-control);
+  height: var(--icon-control);
+  flex: none;
+  color: var(--accent);
+}
+
+.sectionName {
+  font-size: var(--font-base);
+  font-weight: 600;
+  color: var(--text);
+}
+
+.rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-25);
+}
+
+.row {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  font-size: var(--font-sm);
+}
+
+.rowLabel {
+  min-width: 0;
+  font-weight: 500;
+  color: var(--text-2);
+}
+
+.rowValue {
+  flex: none;
+  max-width: 100%;
+  font-weight: 500;
+  color: var(--text);
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.uppercase {
+  text-transform: uppercase;
+}
+
+.mono {
+  font-family: var(--font-mono), monospace;
+}
+
+.alert {
+  color: var(--tone-red);
+}
+
+.copy.copy {
+  border-radius: var(--radius-sm);
+}
+
+.shape {
+  composes: shape from "./shared.module.css";
+}
+
+.shapeLine {
+  width: var(--shape-w);
+  color: transparent;
+}
+
+.shapeText {
+  color: transparent;
+}
+
+.shapeLabel {
+  composes: shapeText;
+}
+
+.rowLabel.shapeLabel {
+  flex: 0 1 auto;
+}
+
+.shapeCopy {
+  align-self: center;
+  width: var(--control-xs);
+  height: var(--control-xs);
+  border-radius: var(--radius-pill);
+}
+
+.statusShape.statusShape {
+  display: flex;
+  max-width: none;
+  border-radius: var(--radius-pill);
+  color: transparent;
+}

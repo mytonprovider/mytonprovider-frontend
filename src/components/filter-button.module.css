@@ -1,0 +1,42 @@
+.button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  flex: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 500;
+}
+
+.button:hover {
+  border-color: var(--border-strong);
+}
+
+.active,
+.active:hover {
+  border-color: var(--btn);
+  background: var(--btn);
+  color: var(--btn-ink);
+}
+
+.icon {
+  width: var(--control-search);
+  height: var(--control-search);
+  padding: 0;
+}
+
+.labeled {
+  height: var(--control-md);
+  padding: 0 var(--pad-pill);
+  gap: var(--space-2);
+  font-size: var(--font-md);
+}
+
+.glyph {
+  width: var(--icon-md);
+  height: var(--icon-md);
+  flex: none;
+}

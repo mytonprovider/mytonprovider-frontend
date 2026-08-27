@@ -1,0 +1,33 @@
+.button {
+  display: grid;
+  place-items: center;
+  flex: none;
+  border-radius: var(--radius-pill);
+  color: var(--text-2);
+  background: transparent;
+}
+
+.button:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.md {
+  width: var(--control-md);
+  height: var(--control-md);
+}
+
+.lg {
+  width: var(--control-input);
+  height: var(--control-input);
+}
+
+.sm {
+  width: var(--control-sm);
+  height: var(--control-sm);
+}
+
+.xs {
+  width: var(--control-xs);
+  height: var(--control-xs);
+}
