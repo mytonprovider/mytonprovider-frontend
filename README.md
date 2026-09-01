@@ -80,6 +80,28 @@ To only build the static files without Node or a running container:
 docker build --target dist --output dist .
 ```
 
+### Docker Hub image
+
+Build and push a production image (same pattern as coordinator/agent in the backend repo):
+
+```bash
+docker login
+FRONTEND_IMAGE=<user>/mytonprovider-frontend:latest task image:build:push
+```
+
+Optional build-time overrides: `VITE_API_URL` (default `/api/v1`) and `VITE_SITE_URL` (default `https://mytonprovider.org`). Copy `.env.example` to `.env` to set them for both `task image:build` and `docker compose`.
+
+On a VPS, pull and run the prebuilt image (no Node on the host):
+
+```bash
+task hub:init
+# edit .env.hub: FRONTEND_IMAGE and PORT
+task hub:up
+task hub:ps
+task hub:logs
+task hub:down
+```
+
 ## Deployment
 
 Every push to `master`, and every pull request, runs lint, tests and build in CI.
