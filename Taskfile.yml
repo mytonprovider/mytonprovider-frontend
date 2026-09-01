@@ -14,7 +14,7 @@ tasks:
         fi
       - |
         docker build -f Dockerfile \
-          --build-arg VITE_API_URL="${VITE_API_URL:-/api/v1}" \
+          --build-arg VITE_API_URL="${VITE_API_URL:-https://api.mytonprovider.org/api/v1}" \
           --build-arg VITE_SITE_URL="${VITE_SITE_URL:-https://mytonprovider.org}" \
           -t "${FRONTEND_IMAGE}" .
 

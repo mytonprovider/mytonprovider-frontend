@@ -51,10 +51,10 @@ pnpm test
 
 Two optional build-time variables point at the production site by default and are baked into the bundle:
 
-| Variable        | Description                                                   | Default                            |
-|-----------------|---------------------------------------------------------------|------------------------------------|
-| `VITE_API_URL`  | Base URL serving `/providers/search`                          | `https://mytonprovider.org/api/v1` |
-| `VITE_SITE_URL` | Origin the app is served from, for absolute links in previews | `https://mytonprovider.org`        |
+| Variable        | Description                                                   | Default                                      |
+|-----------------|---------------------------------------------------------------|----------------------------------------------|
+| `VITE_API_URL`  | Base URL serving `/providers/search`                          | `https://api.mytonprovider.org/api/v1`       |
+| `VITE_SITE_URL` | Origin the app is served from, for absolute links in previews | `https://mytonprovider.org`                  |
 
 To build for another origin:
 
@@ -89,7 +89,16 @@ docker login
 FRONTEND_IMAGE=<user>/mytonprovider-frontend:latest task image:build:push
 ```
 
-Optional build-time overrides: `VITE_API_URL` (default `/api/v1`) and `VITE_SITE_URL` (default `https://mytonprovider.org`). Copy `.env.example` to `.env` to set them for both `task image:build` and `docker compose`.
+Optional build-time overrides: `VITE_API_URL` (default `https://api.mytonprovider.org/api/v1`) and `VITE_SITE_URL` (default `https://mytonprovider.org`). Copy `.env.example` to `.env` to set them for both `task image:build` and `docker compose`.
+
+### Production layout (separate frontend + coordinator)
+
+- **UI:** `mytonprovider.org` — this repo, `task hub:up` (container on `${PORT:-80}`)
+- **API:** `api.mytonprovider.org` — [mytonprovider-backend](https://github.com/mytonprovider/mytonprovider-backend) coordinator, `task coordinator:hub:up`
+
+Point both DNS records to the VPS. In coordinator `.env.hub` set `CORS_ALLOWED_ORIGINS=https://mytonprovider.org`. Build the frontend image with the default `VITE_API_URL` (API subdomain) before `task image:build:push`.
+
+TLS for both hostnames is configured outside these compose stacks (Cloudflare, certbot, etc.).
 
 On a VPS, pull and run the prebuilt image (no Node on the host):
 
