@@ -2,10 +2,11 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { ArrowUp, Search, X } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import type { FiltersData } from "@/types/filters"
-import { PAGE_SIZE, useCatalog } from "@/lib/catalog"
+import { useCatalog } from "@/lib/catalog"
 import { DEFAULT_FILTERS, countActiveFilters, isPristine } from "@/lib/filters"
 import { FAVORITES_KEY, readStoredStrings, removeStored, writeStored } from "@/lib/storage"
 import { copyText, scrollToTop } from "@/lib/dom"
+import { cx } from "@/lib/cx"
 import { providerUrl, useOpenProvider } from "@/lib/route"
 import Header from "@/components/header"
 import Footer from "@/components/footer"
@@ -229,7 +230,7 @@ export const App = () => {
               sortDirection={catalog.sortDirection}
               filtersActive={filtersTouched}
               loading={catalog.showSkeleton}
-              skeletonRows={PAGE_SIZE}
+              skeletonRows={catalog.placeholder.shown}
               pinnedSkeletonRows={favorites.length}
               onSort={catalog.toggleSort}
               onToggleFavorite={toggleFavorite}
@@ -240,7 +241,18 @@ export const App = () => {
               onOpenFilters={openFilters}
             />
 
-            {!catalog.showSkeleton && (
+            {catalog.showSkeleton ? (
+              catalog.placeholder.total > 0 && (
+                <div className={styles.more} aria-hidden="true">
+                  <span className={cx(styles.showing, styles.shape, styles.shapeText)}>
+                    {t("ui.showing", { shown: catalog.placeholder.shown, total: catalog.placeholder.total })}
+                  </span>
+                  {catalog.placeholder.shown < catalog.placeholder.total && (
+                    <span className={cx(styles.moreButton, styles.shape, styles.shapeText)}>{t("buttons.loadMore")}</span>
+                  )}
+                </div>
+              )
+            ) : (
               <div className={styles.more}>
                 <span className={styles.showing} role="status">
                   {t("ui.showing", { shown: catalog.rows.length, total: catalog.total })}

@@ -6,9 +6,34 @@ import type { ProviderDetail, SortDirection, SortField } from "@/types/model"
 import { ApiError, fetchProviders } from "./api"
 import { matchesQuery, sortProviders, toDetail, toRow } from "./model"
 import { deriveBounds, matches, optionsFor, type FilterBounds, type FilterOptions } from "./filters"
+import { LIST_KEY, readStored, writeStored } from "./storage"
 
 export const PAGE_SIZE = 20
 const FRESH_FOR_MS = 120_000
+
+interface ListShape {
+  shown: number
+  total: number
+}
+
+const COLD_LIST: ListShape = { shown: PAGE_SIZE, total: 0 }
+
+const isCount = (value: unknown): value is number => typeof value === "number" && Number.isInteger(value) && value >= 0
+
+const storedList = (): ListShape => {
+  const stored = readStored(LIST_KEY)
+  if (!stored) return COLD_LIST
+
+  try {
+    const parsed: unknown = JSON.parse(stored)
+    const { shown, total } = (parsed ?? {}) as { shown?: unknown; total?: unknown }
+    return isCount(shown) && shown > 0 && isCount(total) && total >= shown ? { shown, total } : COLD_LIST
+  } catch {
+    return COLD_LIST
+  }
+}
+
+const pageFor = (shown: number): number => Math.max(PAGE_SIZE, Math.ceil(shown / PAGE_SIZE) * PAGE_SIZE)
 
 interface Snapshot {
   providers: Provider[]
@@ -42,10 +67,11 @@ export const useCatalog = (filters: FiltersData, favorites: string[]) => {
   const [failure, setFailure] = useState<{ status: number | null } | null>(null)
   const [reloadToken, setReloadToken] = useState(0)
 
-  const [query, setQueryValue] = useState("")
+  const [query, setQuery] = useState("")
   const [sortField, setSortField] = useState<SortField>("rating")
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc")
-  const [limit, setLimit] = useState(PAGE_SIZE)
+  const [placeholder] = useState(storedList)
+  const [limit, setLimit] = useState(() => pageFor(placeholder.shown))
   const loadedAt = useRef(0)
 
   useEffect(() => {
@@ -83,10 +109,6 @@ export const useCatalog = (filters: FiltersData, favorites: string[]) => {
     return () => document.removeEventListener("visibilitychange", onVisible)
   }, [])
 
-  useEffect(() => {
-    setLimit(PAGE_SIZE)
-  }, [filters])
-
   const sorted = useMemo(() => {
     const found = snapshot.providers.filter(
       (provider) => matches(provider, filters, snapshot.fetchedAt) && matchesQuery(provider, query),
@@ -95,6 +117,11 @@ export const useCatalog = (filters: FiltersData, favorites: string[]) => {
   }, [snapshot.providers, snapshot.fetchedAt, filters, query, sortField, sortDirection])
 
   const rows = useMemo(() => sorted.slice(0, limit).map((provider) => toRow(provider, t)), [sorted, limit, t])
+
+  useEffect(() => {
+    if (snapshot.providers.length === 0) return
+    writeStored(LIST_KEY, JSON.stringify({ shown: rows.length, total: sorted.length }))
+  }, [snapshot.providers.length, rows.length, sorted.length])
 
   const pinned = useMemo(
     () => sorted.filter((provider) => favorites.includes(provider.pubkey)).map((provider) => toRow(provider, t)),
@@ -114,11 +141,6 @@ export const useCatalog = (filters: FiltersData, favorites: string[]) => {
     [snapshot.providers, snapshot.fetchedAt, query],
   )
 
-  const setQuery = useCallback((next: string) => {
-    setQueryValue(next)
-    setLimit(PAGE_SIZE)
-  }, [])
-
   const toggleSort = (field: SortField) => {
     if (field !== sortField) {
       setSortField(field)
@@ -131,6 +153,7 @@ export const useCatalog = (filters: FiltersData, favorites: string[]) => {
   return {
     rows,
     pinned,
+    placeholder,
     total: sorted.length,
     loading,
     showSkeleton: loading && snapshot.providers.length === 0,

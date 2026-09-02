@@ -1,6 +1,7 @@
 export const THEME_KEY = "mtp_theme"
 export const LANGUAGE_KEY = "mtp_lang"
 export const FAVORITES_KEY = "mtp_favorites"
+export const LIST_KEY = "mtp_list"
 
 export const readStored = (key: string): string | null => {
   try {

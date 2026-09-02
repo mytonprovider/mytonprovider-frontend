@@ -176,6 +176,14 @@
   font-size: var(--font-base);
 }
 
+.shape {
+  composes: shape from "./components/shared.module.css";
+}
+
+.shapeText {
+  color: transparent;
+}
+
 .apply {
   width: 100%;
   height: var(--control-lg);
