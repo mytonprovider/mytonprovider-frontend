@@ -214,12 +214,25 @@
 }
 
 .keyText {
-  composes: ellipsis from "./shared.module.css";
+  display: flex;
   font-family: var(--font-mono), monospace;
   font-size: var(--font-base);
   font-weight: 400;
   color: var(--text);
   text-transform: uppercase;
+}
+
+.keyHead,
+.keyTail {
+  flex: none;
+  width: 6ch;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.keyTail {
+  display: flex;
+  justify-content: flex-end;
 }
 
 .status {
@@ -393,6 +406,11 @@
   cursor: default;
 }
 
+.keyShape.keyShape {
+  display: flex;
+  color: transparent;
+}
+
 .statusShape.statusShape {
   display: inline-flex;
   max-width: none;
@@ -519,6 +537,12 @@
   .key {
     flex: 1 1 auto;
     min-width: 0;
+    container-type: inline-size;
+    --key-room: calc(100cqw - var(--space-1) - var(--control-xs));
+  }
+
+  .keyTail {
+    width: clamp(0ch, round(down, var(--key-room) - 7ch, 1ch), 6ch);
   }
 
   .status {
@@ -549,20 +573,16 @@
   }
 }
 
-@media (max-width: 422px) {
-  .keyTail {
-    display: none;
-  }
-}
-
-@media (max-width: 373px) {
+@media (max-width: 386px) {
   .head {
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
     row-gap: var(--space-3);
   }
 
   .orderStatus {
     order: 11;
+    grid-column: 1 / -1;
   }
 }
 

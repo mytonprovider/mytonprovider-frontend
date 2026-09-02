@@ -144,6 +144,8 @@ export const toRow = (provider: Provider, t: Translate): ProviderRow => {
 
 const sortValue = (provider: Provider, field: SortField): string | number => {
   switch (field) {
+    case "pubkey":
+      return provider.pubkey
     case "location":
       return provider.location?.country ?? ""
     case "uptime":

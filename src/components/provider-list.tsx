@@ -20,7 +20,7 @@ interface Column {
 }
 
 const COLUMNS: Column[] = [
-  { id: "pubkey", label: "table.publicKey" },
+  { id: "pubkey", label: "table.publicKey", sort: "pubkey" },
   { id: "rating", label: "table.rating", sort: "rating" },
   { id: "status", label: "table.status", hint: "status.accessibleFilesHint", sort: "status" },
   { id: "uptime", label: "table.uptime", hint: "status.uptimeHint", sort: "uptime" },
@@ -107,7 +107,7 @@ const KeyText = ({ value }: { value: string }) => {
 
   return (
     <>
-      {head}…<span className={styles.keyTail}>{tail}</span>
+      <span className={styles.keyHead}>{head}</span>…<span className={styles.keyTail}>{tail}</span>
     </>
   )
 }
@@ -145,7 +145,7 @@ const SkeletonCard = ({ index }: { index: number }) => {
       <div className={styles.head}>
         <span className={cx(shape(styles.shapeCircleSm), styles.orderFavorite)} />
         <div className={cx(styles.key, styles.orderKey)}>
-          <span className={cx(styles.keyText, shape(styles.shapeText))}>
+          <span className={cx(styles.keyText, shape(styles.keyShape))}>
             <KeyText value={KEY_PLACEHOLDER} />
           </span>
           <span className={shape(styles.shapeCopy)} />

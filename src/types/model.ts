@@ -1,6 +1,7 @@
 export type StatusTone = "gray" | "green" | "yellow" | "red" | "orange"
 
 export type SortField =
+  | "pubkey"
   | "uptime"
   | "price"
   | "rating"
