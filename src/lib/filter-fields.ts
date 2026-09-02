@@ -5,6 +5,7 @@ import { BYTES_IN_GB, BYTES_IN_GIB, BYTES_IN_KIB, NANO, PING_LIMIT, SECONDS_IN_D
 import { freeSpaceOf } from "./model"
 
 const KIB_IN_MIB = 1024
+const FREE_SPACE_FROM_BYTES = 4 * BYTES_IN_GIB
 
 export interface Bounds {
   min: number
@@ -97,7 +98,7 @@ export const FILTER_GROUPS: FilterGroup[] = [
         label: "filters.onlyWithFreeSpace",
         read: (provider) => {
           const free = freeSpaceOf(provider)
-          return free === null ? null : free > 0
+          return free === null ? null : free > FREE_SPACE_FROM_BYTES
         },
       },
       {
@@ -250,7 +251,7 @@ export const FILTER_GROUPS: FilterGroup[] = [
         kind: "tri",
         key: "cpu_is_virtual",
         label: "filters.cpuIsVirtual",
-        read: (provider) => provider.telemetry?.cpu_is_virtual ?? null,
+        read: (provider) => provider.telemetry?.cpu_is_virtual ?? false,
       },
       {
         kind: "range",

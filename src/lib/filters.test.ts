@@ -10,7 +10,8 @@ import {
   type FieldView,
 } from "./filters"
 import type { FiltersData } from "@/types/filters"
-import { brokenPing, overfilled, providers, silent, stable, veteran } from "./fixtures"
+import { toProvider } from "./api"
+import { apiStable, brokenPing, overfilled, providers, silent, stable, veteran } from "./fixtures"
 
 const NO_FILTERS: FiltersData = {}
 const NOW = 1785545100
@@ -210,8 +211,10 @@ describe("matches", () => {
     expect(matches(stable, { isp: "nope" }, NOW)).toBe(false)
   })
 
-  it("treats free space the way the catalog shows it", () => {
+  it("counts free space only above 4 GiB", () => {
+    const nearlyFull = toProvider({ ...apiStable, telemetry: { ...apiStable.telemetry, used_provider_space: 3817.5 } })
     expect(matches(stable, { has_free_space: true }, NOW)).toBe(true)
+    expect(matches(nearlyFull, { has_free_space: true }, NOW)).toBe(false)
     expect(matches(overfilled, { has_free_space: true }, NOW)).toBe(false)
   })
 
@@ -223,5 +226,11 @@ describe("matches", () => {
   it("answers a switch by the value it stores", () => {
     expect(kept({ is_send_telemetry: true })).toBe(providers.length - 1)
     expect(kept({ is_send_telemetry: false })).toBe(1)
+  })
+
+  it("counts an unknown cpu as physical, like the backend does", () => {
+    expect(matches(silent, { cpu_is_virtual: false }, NOW)).toBe(true)
+    expect(matches(silent, { cpu_is_virtual: true }, NOW)).toBe(false)
+    expect(matches(stable, { cpu_is_virtual: true }, NOW)).toBe(true)
   })
 })
