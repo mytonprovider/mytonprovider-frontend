@@ -50,6 +50,7 @@
 .icon {
   width: var(--icon-lg);
   height: var(--icon-lg);
+  view-transition-name: theme-icon;
 }
 
 @media (max-width: 539px) {

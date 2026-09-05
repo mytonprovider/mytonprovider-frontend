@@ -37,11 +37,7 @@ export default function Header() {
           {i18n.language === "en" ? "RU" : "EN"}
         </IconButton>
 
-        <IconButton
-          size="lg"
-          label={t("ui.theme")}
-          onClick={(event) => toggle(event.currentTarget.getBoundingClientRect())}
-        >
+        <IconButton size="lg" label={t("ui.theme")} onClick={toggle}>
           {dark ? <Sun className={styles.icon} aria-hidden="true" /> : <Moon className={styles.icon} aria-hidden="true" />}
         </IconButton>
       </div>

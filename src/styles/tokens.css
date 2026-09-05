@@ -112,6 +112,7 @@
   --sheet-max: 840px;
   --sheet-min: 380px;
 
+  --dur-theme: 0.15s;
   --dur-fast: 0.18s;
   --dur-base: 0.26s;
   --dur-slow: 0.32s;
