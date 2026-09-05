@@ -117,10 +117,6 @@ Every push to `master`, and every pull request, runs lint, tests and build in CI
 
 Deployment is self-hosted: pull `master` on the host and rebuild the container as shown in [Docker](#docker).
 
-Publishing to GitHub Pages is still available through `pnpm run deploy` — it builds with
-`--base /mytonprovider-frontend/` and pushes to a `gh-pages` branch — but it is not in use,
-and the Pages site is switched off.
-
 ## License
 
 This repository is distributed under the [Apache License 2.0](LICENSE).
