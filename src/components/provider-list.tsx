@@ -7,6 +7,7 @@ import { IconButton } from "./icon-button"
 import { FilterButton } from "./filter-button"
 import styles from "./provider-list.module.css"
 import { cx } from "@/lib/cx"
+import { PAGE_SIZE } from "@/lib/catalog"
 import { STATUS_KEYS } from "@/lib/model"
 import { providerUrl } from "@/lib/route"
 
@@ -30,7 +31,10 @@ const COLUMNS: Column[] = [
   { id: "location", label: "table.location", sort: "location" },
 ]
 
-const STAGGER_LIMIT = 10
+const STAGGER_STEP_MS = 28
+const STAGGER_SPAN_MS = PAGE_SIZE * STAGGER_STEP_MS
+
+const staggerStep = (count: number): number => Math.min(STAGGER_STEP_MS, STAGGER_SPAN_MS / Math.max(count, 1))
 
 const KEY_PLACEHOLDER = "000000…000000"
 
@@ -88,7 +92,7 @@ interface CardProps {
   onShare: (pubkey: string) => void
   sharedUrl: boolean
   row: ProviderRow
-  index: number
+  delay: number
   fresh: boolean
   viewed: boolean
   favorite: boolean
@@ -133,15 +137,11 @@ const StatusCell = ({ status }: { status: ProviderRow["status"] }) => {
   )
 }
 
-const SkeletonCard = ({ index }: { index: number }) => {
+const SkeletonCard = () => {
   const { t } = useTranslation()
 
   return (
-    <article
-      className={cx(styles.card, styles.placeholder)}
-      style={{ "--card-index": index } as React.CSSProperties}
-      aria-hidden="true"
-    >
+    <article className={cx(styles.card, styles.placeholder)} aria-hidden="true">
       <div className={styles.head}>
         <span className={cx(shape(styles.shapeCircleSm), styles.orderFavorite)} />
         <div className={cx(styles.key, styles.orderKey)}>
@@ -186,7 +186,7 @@ const Cell = ({ id, label, children }: { id: StatId; label: string; children: Re
 
 const ProviderCard = ({
   row,
-  index,
+  delay,
   fresh,
   viewed,
   favorite,
@@ -203,7 +203,7 @@ const ProviderCard = ({
     <article
       className={cx(styles.card, fresh && styles.enter)}
       data-viewed={viewed ? "" : undefined}
-      style={{ "--card-index": index } as React.CSSProperties}
+      style={{ "--card-delay": `${delay}ms` } as React.CSSProperties}
     >
       <button
         type="button"
@@ -312,11 +312,13 @@ export const ProviderList = ({
     for (const row of [...pinned, ...rows]) seen.current.add(row.pubkey)
   }, [pinned, rows])
 
+  const step = staggerStep(rows.length)
+
   const renderCard = (row: ProviderRow, index: number) => (
     <ProviderCard
       key={row.pubkey}
       row={row}
-      index={index % STAGGER_LIMIT}
+      delay={index * step}
       fresh={!seen.current.has(row.pubkey)}
       viewed={row.pubkey === viewedKey}
       favorite={favorites.includes(row.pubkey)}
@@ -330,9 +332,7 @@ export const ProviderList = ({
   )
 
   const pinnedCards = loading
-    ? Array.from({ length: pinnedSkeletonRows }, (_, index) => (
-        <SkeletonCard key={index} index={index % STAGGER_LIMIT} />
-      ))
+    ? Array.from({ length: pinnedSkeletonRows }, (_, index) => <SkeletonCard key={index} />)
     : pinned.map(renderCard)
 
   return (
@@ -433,9 +433,7 @@ export const ProviderList = ({
 
       <div className={styles.list}>
         {loading
-          ? Array.from({ length: skeletonRows }, (_, index) => (
-              <SkeletonCard key={index} index={index % STAGGER_LIMIT} />
-            ))
+          ? Array.from({ length: skeletonRows }, (_, index) => <SkeletonCard key={index} />)
           : rows.map(renderCard)}
       </div>
     </div>

@@ -144,7 +144,7 @@
 
 .enter {
   animation: card-in var(--dur-slow) ease-out backwards;
-  animation-delay: calc(var(--card-index, 0) * 28ms);
+  animation-delay: var(--card-delay, 0ms);
 }
 
 @media (hover: hover) {
