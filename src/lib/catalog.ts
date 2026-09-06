@@ -120,8 +120,9 @@ export const useCatalog = (filters: FiltersData, favorites: string[]) => {
 
   useEffect(() => {
     if (snapshot.providers.length === 0) return
-    writeStored(LIST_KEY, JSON.stringify({ shown: rows.length, total: sorted.length }))
-  }, [snapshot.providers.length, rows.length, sorted.length])
+    const total = snapshot.providers.length
+    writeStored(LIST_KEY, JSON.stringify({ shown: Math.min(limit, total), total }))
+  }, [snapshot.providers.length, limit])
 
   const pinned = useMemo(
     () => sorted.filter((provider) => favorites.includes(provider.pubkey)).map((provider) => toRow(provider, t)),
