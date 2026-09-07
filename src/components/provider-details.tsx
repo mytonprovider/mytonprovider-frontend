@@ -48,7 +48,7 @@ export const ProviderDetails = ({ detail, copiedKey, onCopy }: ProviderDetailsPr
                 className={styles.barSegment}
                 data-tone={item.tone}
                 style={{ flexGrow: item.count }}
-                title={`${item.label} • ${item.count}`}
+                title={`${item.label} • ${item.count} (${item.percent})`}
               />
             ))}
           </div>
