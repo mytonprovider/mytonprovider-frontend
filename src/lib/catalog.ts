@@ -5,7 +5,7 @@ import type { Provider } from "@/types/provider"
 import type { ProviderDetail, SortDirection, SortField } from "@/types/model"
 import { ApiError, fetchProviders } from "./api"
 import { matchesQuery, sortProviders, toDetail, toRow } from "./model"
-import { deriveBounds, matches, optionsFor, type FilterBounds, type FilterOptions } from "./filters"
+import { deriveBounds, isPristine, matches, optionsFor, type FilterBounds, type FilterOptions } from "./filters"
 import { LIST_KEY, readStored, writeStored } from "./storage"
 
 export const PAGE_SIZE = 20
@@ -118,11 +118,12 @@ export const useCatalog = (filters: FiltersData, favorites: string[]) => {
 
   const rows = useMemo(() => sorted.slice(0, limit).map((provider) => toRow(provider, t)), [sorted, limit, t])
 
+  const asOnLoad = isPristine(filters) && query.trim() === ""
+
   useEffect(() => {
-    if (snapshot.providers.length === 0) return
-    const total = snapshot.providers.length
-    writeStored(LIST_KEY, JSON.stringify({ shown: Math.min(limit, total), total }))
-  }, [snapshot.providers.length, limit])
+    if (snapshot.providers.length === 0 || !asOnLoad) return
+    writeStored(LIST_KEY, JSON.stringify({ shown: rows.length, total: sorted.length }))
+  }, [snapshot.providers.length, rows.length, sorted.length, asOnLoad])
 
   const pinned = useMemo(
     () => sorted.filter((provider) => favorites.includes(provider.pubkey)).map((provider) => toRow(provider, t)),
