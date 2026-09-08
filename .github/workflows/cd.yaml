@@ -48,6 +48,6 @@ jobs:
           script: |
             cd /opt/mytonprovider-frontend
 
-            printf 'FRONTEND_IMAGE=%s\n' '${{ env.IMAGE }}' > .env.hub
+            sed -i "s|^FRONTEND_IMAGE=.*|FRONTEND_IMAGE=${{ env.IMAGE }}|" .env.hub
 
             task hub:up
