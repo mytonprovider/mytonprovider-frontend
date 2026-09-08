@@ -31,6 +31,14 @@ jobs:
 
           docker push "$IMAGE"
 
+      - name: Check SSH key
+        env:
+          SSH_KEY: ${{ secrets.SERVER_SSH_KEY }}
+        run: |
+          printf '%s\n' "$SSH_KEY" > /tmp/deploy_key
+          chmod 600 /tmp/deploy_key
+          ssh-keygen -lf /tmp/deploy_key
+
       - name: Deploy to server
         uses: appleboy/ssh-action@v1
         with:
