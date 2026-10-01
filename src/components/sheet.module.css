@@ -68,11 +68,15 @@
 }
 
 .badge {
-  padding: var(--space-05) var(--space-35);
-  border-radius: var(--radius-xs);
-  background: var(--accent-weak);
-  color: var(--accent-text);
-  font-size: var(--font-xs);
+  display: grid;
+  place-items: center;
+  min-width: var(--control-badge);
+  height: var(--control-badge);
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--surface-3);
+  color: var(--text-2);
+  font-size: var(--font-sm);
   font-weight: 600;
 }
 

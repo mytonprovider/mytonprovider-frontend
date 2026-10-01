@@ -66,16 +66,23 @@
   flex: none;
   width: var(--icon-control);
   height: var(--icon-control);
+  border-radius: var(--radius-pill);
+  background: var(--surface-3);
+  color: var(--text-2);
   cursor: help;
+}
+
+.hint:hover,
+.sortable:focus-visible .hint {
+  background: var(--accent-weak);
+  color: var(--accent-text);
 }
 
 .hint::before {
   content: "?";
-  color: var(--accent);
-  font-size: var(--font-lg);
+  font-size: var(--font-xs);
   font-weight: 700;
   line-height: 1;
-  transform: translateY(-0.5px);
 }
 
 .hint::after {

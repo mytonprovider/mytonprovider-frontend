@@ -63,8 +63,8 @@
   height: var(--control-badge);
   padding: 0 var(--space-2);
   border-radius: var(--radius-pill);
-  background: var(--accent-weak);
-  color: var(--accent-text);
+  background: var(--surface-3);
+  color: var(--text-2);
   font-size: var(--font-sm);
   font-weight: 600;
 }
