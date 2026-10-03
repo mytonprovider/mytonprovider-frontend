@@ -1,5 +1,5 @@
 import { useEffect, useRef, type ReactNode } from "react"
-import { ArrowDown, ArrowUp, Check, ChevronDown, Share2, Star } from "lucide-react"
+import { ArrowDown, ArrowUp, Check, ChevronDown, CircleHelp, Share2, Star } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import type { ProviderRow, SortDirection, SortField } from "@/types/model"
 import { CopyButton } from "./copy-button"
@@ -85,7 +85,7 @@ const STAT_VALUES: Record<StatId, (row: ProviderRow) => ReactNode> = {
     </>
   ),
   workingTime: (row) => <span>{row.workingTime}</span>,
-  location: (row) => <span>{row.location}</span>,
+  location: (row) => <span title={row.location}>{row.location}</span>,
 }
 
 interface CardProps {
@@ -198,6 +198,7 @@ const ProviderCard = ({
   onOpen,
 }: CardProps) => {
   const { t } = useTranslation()
+  const openRef = useRef<HTMLButtonElement>(null)
 
   return (
     <article
@@ -206,6 +207,7 @@ const ProviderCard = ({
       style={{ "--card-delay": `${delay}ms` } as React.CSSProperties}
     >
       <button
+        ref={openRef}
         type="button"
         className={styles.open}
         aria-label={`${t("table.providerDetails")} ${row.keyShort}`}
@@ -227,9 +229,18 @@ const ProviderCard = ({
         </IconButton>
 
         <div className={cx(styles.key, styles.orderKey)}>
-          <span className={styles.keyText} title={row.pubkey}>
+          <button
+            type="button"
+            tabIndex={-1}
+            className={styles.keyText}
+            title={row.pubkey}
+            onClick={() => {
+              openRef.current?.focus()
+              onOpen(row.pubkey)
+            }}
+          >
             <KeyText value={row.keyShort} />
-          </span>
+          </button>
           <CopyButton value={row.pubkey} copied={copied} onCopy={onCopy} label={`${t("ui.copy")} ${row.keyShort}`} />
         </div>
 
@@ -356,7 +367,9 @@ export const ProviderList = ({
                   data-hint={t(column.hint)}
                   aria-hidden="true"
                   onClick={(event) => event.stopPropagation()}
-                />
+                >
+                  <CircleHelp className={styles.hintIcon} />
+                </span>
               )}
               {sort !== undefined &&
                 (isActive && sortDirection === "asc" ? (
