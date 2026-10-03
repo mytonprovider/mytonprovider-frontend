@@ -448,17 +448,31 @@
   composes: shape from "./shared.module.css";
 }
 
-.shapeCircleSm.shapeCircleSm {
+.skeletonIcon {
+  display: grid;
+  place-items: center;
+  flex: none;
   width: var(--control-sm);
-  max-width: none;
   height: var(--control-sm);
-  border-radius: var(--radius-pill);
 }
 
-.shapeCopy.shapeCopy {
+.skeletonCopy {
+  display: grid;
+  place-items: center;
   flex: none;
   width: var(--control-xs);
   height: var(--control-xs);
+}
+
+.shapeIcon.shapeIcon {
+  width: var(--icon-control);
+  height: var(--icon-control);
+  border-radius: var(--radius-pill);
+}
+
+.shapeIconSm.shapeIconSm {
+  width: var(--icon-sm);
+  height: var(--icon-sm);
   border-radius: var(--radius-pill);
 }
 
@@ -467,7 +481,7 @@
 }
 
 .shapeValue {
-  width: var(--shape-w);
+  width: calc(var(--shape-w) * var(--shape-k, 1));
   height: 1em;
 }
 

@@ -149,7 +149,7 @@ export const ProviderDetails = ({ detail, copiedKey, onCopy }: ProviderDetailsPr
 interface SkeletonSection {
   id: SectionId
   label: string
-  rows: string[]
+  rows: [string, string][]
   copies: number
 }
 
@@ -161,46 +161,56 @@ const SKELETON_SECTIONS: SkeletonSection[] = [
     label: "provider.providerTitle",
     copies: 2,
     rows: [
-      "table.publicKey",
-      "provider.address",
-      "provider.span",
-      "provider.maxBagSize",
-      "provider.workingTime",
-      "provider.lastOnline",
-      "provider.lastTelemetry",
-      "provider.location",
-      "provider.uptime",
-      "provider.rating",
-      "provider.price",
+      ["table.publicKey", "7.8em"],
+      ["provider.address", "7.8em"],
+      ["provider.span", "6.7em"],
+      ["provider.maxBagSize", "3em"],
+      ["provider.workingTime", "3.6em"],
+      ["provider.lastOnline", "5.4em"],
+      ["provider.lastTelemetry", "5.4em"],
+      ["provider.location", "6.4em"],
+      ["provider.uptime", "3.1em"],
+      ["provider.rating", "2.5em"],
+      ["provider.price", "4.3em"],
     ],
   },
   {
     id: "software",
     label: "provider.software",
     copies: 2,
-    rows: ["provider.storageGitHash", "provider.providerGitHash"],
+    rows: [["provider.storageGitHash", "3.8em"], ["provider.providerGitHash", "4.3em"]],
   },
   {
     id: "benchmarks",
     label: "provider.benchmarks",
     copies: 0,
-    rows: ["provider.diskReadSpeed", "provider.diskWriteSpeed"],
+    rows: [["provider.diskReadSpeed", "4.9em"], ["provider.diskWriteSpeed", "5em"]],
   },
   {
     id: "hardware",
     label: "provider.hardware",
     copies: 0,
-    rows: ["provider.cpuName", "provider.cpuNumber", "provider.cpuIsVirtual", "provider.ram", "provider.totalProviderSpace"],
+    rows: [
+      ["provider.cpuName", "11em"],
+      ["provider.cpuNumber", "0.7em"],
+      ["provider.cpuIsVirtual", "1.8em"],
+      ["provider.ram", "6.5em"],
+      ["provider.totalProviderSpace", "7.5em"],
+    ],
   },
   {
     id: "network",
     label: "provider.network",
     copies: 0,
-    rows: ["provider.speedtestDownload", "provider.speedtestUpload", "provider.speedtestPing", "provider.country", "provider.isp"],
+    rows: [
+      ["provider.speedtestDownload", "5.2em"],
+      ["provider.speedtestUpload", "5em"],
+      ["provider.speedtestPing", "3.7em"],
+      ["provider.country", "1.4em"],
+      ["provider.isp", "6.8em"],
+    ],
   },
 ]
-
-const VALUE_WIDTHS = ["6em", "4em", "8em", "5em", "7em"]
 
 const line = (width: string) => ({ "--shape-w": width }) as React.CSSProperties
 
@@ -243,17 +253,18 @@ export const ProviderDetailsSkeleton = () => {
       <div className={styles.groups}>
         {SKELETON_SECTIONS.map((section) => (
           <Section key={section.id} id={section.id} title={t(section.label)}>
-            {section.rows.map((row, index) => (
+            {section.rows.map(([row, width], index) => (
               <div key={row} className={styles.row}>
                 <span className={cx(styles.rowLabel, styles.shape, styles.shapeLabel)}>{t(row)}</span>
                 <span className={styles.spacer} />
-                <span
-                  className={cx(styles.rowValue, styles.shape, styles.shapeLine)}
-                  style={line(VALUE_WIDTHS[index % VALUE_WIDTHS.length])}
-                >
+                <span className={cx(styles.rowValue, styles.shape, styles.shapeLine)} style={line(width)}>
                   &nbsp;
                 </span>
-                {index < section.copies && <span className={cx(styles.copy, styles.shape, styles.shapeCopy)} />}
+                {index < section.copies && (
+                  <span className={styles.copySlot}>
+                    <span className={cx(styles.shape, styles.shapeCopy)} />
+                  </span>
+                )}
               </div>
             ))}
           </Section>

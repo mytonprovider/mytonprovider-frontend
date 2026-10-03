@@ -253,6 +253,7 @@
 
 .shape {
   composes: shape from "./shared.module.css";
+  box-shadow: none;
 }
 
 .shapeLine {
@@ -272,10 +273,18 @@
   flex: 0 1 auto;
 }
 
-.shapeCopy {
+.copySlot {
+  display: grid;
+  place-items: center;
+  flex: none;
   align-self: center;
-  width: var(--control-xs);
-  height: var(--control-xs);
+  width: calc(var(--font-sm) * var(--line-base));
+  height: calc(var(--font-sm) * var(--line-base));
+}
+
+.shapeCopy.shapeCopy {
+  width: var(--icon-sm);
+  height: var(--icon-sm);
   border-radius: var(--radius-pill);
 }
 
