@@ -7,9 +7,15 @@
   background: transparent;
 }
 
-.button:hover {
-  background: var(--surface-2);
-  color: var(--text);
+@media (hover: hover) {
+  .button:hover {
+    background: color-mix(in srgb, var(--text) 10%, transparent);
+    color: var(--text);
+  }
+}
+
+.button:active {
+  background: color-mix(in srgb, var(--text) 16%, transparent);
 }
 
 .md {

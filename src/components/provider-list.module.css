@@ -11,8 +11,16 @@
   display: grid;
   grid-template-columns:
     var(--control-md)
-    repeat(8, minmax(auto, 1fr))
+    auto
+    minmax(4.4em, auto)
+    auto
+    minmax(3.8em, auto)
+    minmax(5.2em, auto)
+    minmax(5.4em, auto)
+    minmax(6em, auto)
+    minmax(8em, auto)
     var(--control-md);
+  justify-content: space-between;
   column-gap: var(--space-6);
 }
 
@@ -43,8 +51,10 @@
   text-align: left;
 }
 
-.sortable:hover {
-  color: var(--text-2);
+@media (hover: hover) {
+  .sortable:hover {
+    color: var(--text-2);
+  }
 }
 
 .active {
@@ -66,23 +76,18 @@
   flex: none;
   width: var(--icon-control);
   height: var(--icon-control);
-  border-radius: var(--radius-pill);
-  background: var(--surface-3);
-  color: var(--text-2);
+  color: color-mix(in srgb, var(--accent) 55%, var(--text-3));
   cursor: help;
 }
 
 .hint:hover,
 .sortable:focus-visible .hint {
-  background: var(--accent-weak);
   color: var(--accent-text);
 }
 
-.hint::before {
-  content: "?";
-  font-size: var(--font-xs);
-  font-weight: 700;
-  line-height: 1;
+.hintIcon {
+  width: var(--icon-sm);
+  height: var(--icon-sm);
 }
 
 .hint::after {
@@ -126,11 +131,22 @@
 .list {
   display: grid;
   grid-template-columns: subgrid;
-  row-gap: var(--space-3);
+  border-radius: var(--radius-lg);
+  overflow: clip;
 }
 
 .list > * {
   grid-column: 1 / -1;
+}
+
+.list > :first-child {
+  border-top-left-radius: var(--radius-lg);
+  border-top-right-radius: var(--radius-lg);
+}
+
+.list > :last-child {
+  border-bottom-left-radius: var(--radius-lg);
+  border-bottom-right-radius: var(--radius-lg);
 }
 
 .pinned {
@@ -142,22 +158,18 @@
   position: relative;
   width: 100%;
   padding: var(--row-py) var(--space-4) var(--row-py) var(--space-3);
-  border-radius: var(--radius-lg);
-  background: var(--surface);
-  box-shadow: var(--shadow-1);
+  background: var(--surface-2);
   cursor: pointer;
   text-align: left;
+}
+
+.card:nth-child(even) {
+  background: var(--bg);
 }
 
 .enter {
   animation: card-in var(--dur-slow) ease-out backwards;
   animation-delay: var(--card-delay, 0ms);
-}
-
-@media (hover: hover) {
-  .card:hover {
-    background: var(--surface-2);
-  }
 }
 
 .open {
@@ -177,11 +189,13 @@
 
 .card:has(.open:focus-visible),
 .card[data-viewed] {
-  background: var(--surface-2);
+  background: var(--surface-3);
 }
 
-.card[data-viewed] {
-  box-shadow: var(--shadow-1), inset 0 0 0 1px var(--focus-edge);
+@media (hover: hover) {
+  .card:hover {
+    background: color-mix(in srgb, var(--accent) 6%, var(--surface-3));
+  }
 }
 
 .head,
@@ -409,6 +423,10 @@
   order: 9;
 }
 
+.orderLocation .value {
+  max-width: 8em;
+}
+
 .placeholder {
   cursor: default;
 }
@@ -470,7 +488,7 @@
   width: 100%;
   height: var(--control-md);
   padding: 0 var(--space-9) 0 var(--pad-pill);
-  border: 1px solid var(--border-control);
+  border: 1px solid var(--border);
   border-radius: var(--radius-pill);
   background: var(--surface);
   color: var(--text);
@@ -478,14 +496,18 @@
   appearance: none;
   cursor: pointer;
   outline: none;
-  transition:
-    border-color var(--dur-fast) ease,
-    box-shadow var(--dur-fast) ease;
+  transition: border-color var(--dur-fast) ease;
+}
+
+@media (hover: hover) {
+  .select:hover {
+    border-color: var(--border-strong);
+    background: color-mix(in srgb, var(--text) 10%, transparent);
+  }
 }
 
 .select:focus {
   border-color: var(--accent);
-  box-shadow: var(--focus-ring);
 }
 
 .selectIcon {
@@ -499,8 +521,15 @@
   background: var(--surface);
 }
 
-.direction.direction:hover {
-  border-color: var(--border-strong);
+@media (hover: hover) {
+  .direction.direction:hover {
+    border-color: var(--border-strong);
+    background: color-mix(in srgb, var(--text) 10%, transparent);
+  }
+}
+
+.direction.direction:active {
+  background: color-mix(in srgb, var(--text) 16%, transparent);
 }
 
 .directionIcon {
@@ -516,7 +545,6 @@
   .list {
     display: flex;
     flex-direction: column;
-    gap: var(--space-3);
   }
 
   .headerRow {
@@ -562,7 +590,7 @@
     grid-template-columns: repeat(6, minmax(0, 1fr));
     gap: var(--space-5) var(--space-4);
     padding: var(--space-4) var(--space-1) 0;
-    border-top: 1px solid var(--border);
+    border-top: 1px solid var(--border-strong);
   }
 
   .label {
@@ -575,8 +603,19 @@
 }
 
 @media (max-width: 539px) {
+  .card {
+    gap: var(--space-4) 0;
+    padding: var(--space-5) var(--space-4);
+  }
+
   .stats {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-4);
+    padding-top: var(--space-4);
+  }
+
+  .cell {
+    gap: 0;
   }
 }
 

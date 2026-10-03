@@ -51,7 +51,7 @@
   align-items: center;
   justify-content: center;
   gap: var(--space-5);
-  max-width: var(--content-max);
+  max-width: var(--search-max);
   margin: 0 auto var(--space-10);
 }
 
@@ -76,25 +76,24 @@
   width: 100%;
   height: var(--control-search);
   padding: 0 clamp(46px, 5vw, 60px);
-  border: 1px solid var(--border-control);
+  border: 1px solid var(--border);
   border-radius: var(--radius-control);
   background: var(--surface);
   color: var(--text);
   font-size: clamp(var(--font-md), 1.2vw, 17px);
   outline: none;
   text-overflow: ellipsis;
-  transition:
-    border-color var(--dur-fast) ease,
-    box-shadow var(--dur-fast) ease;
+  transition: border-color var(--dur-fast) ease;
 }
 
-.searchInput:hover {
-  border-color: var(--border-strong);
+@media (hover: hover) {
+  .searchInput:hover {
+    border-color: var(--border-strong);
+  }
 }
 
 .searchInput:focus {
   border-color: var(--accent);
-  box-shadow: var(--focus-ring);
 }
 
 .clear.clear {
@@ -194,8 +193,10 @@
   font-weight: 600;
 }
 
-.apply:hover {
-  background: var(--btn-hover);
+@media (hover: hover) {
+  .apply:hover {
+    background: var(--btn-hover);
+  }
 }
 
 .fab {
@@ -213,8 +214,10 @@
   animation: fade-in var(--dur-fast) ease-out;
 }
 
-.fab:hover {
-  background: var(--btn-hover);
+@media (hover: hover) {
+  .fab:hover {
+    background: var(--btn-hover);
+  }
 }
 
 .fabIcon {

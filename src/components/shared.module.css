@@ -14,16 +14,29 @@
   background: var(--surface);
 }
 
-.outline:hover {
-  border-color: var(--border-strong);
+@media (hover: hover) {
+  .outline:hover {
+    border-color: var(--border-strong);
+    background: color-mix(in srgb, var(--text) 10%, transparent);
+  }
+}
+
+.outline:active {
+  background: color-mix(in srgb, var(--text) 16%, transparent);
 }
 
 .textButton {
   font-size: var(--font-sm);
 }
 
-.textButton:hover {
-  background: var(--surface-3);
+@media (hover: hover) {
+  .textButton:hover {
+    background: color-mix(in srgb, var(--text) 10%, transparent);
+  }
+}
+
+.textButton:active {
+  background: color-mix(in srgb, var(--text) 16%, transparent);
 }
 
 .fieldChevron {
