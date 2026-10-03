@@ -57,12 +57,14 @@ const STAT_COLUMNS = COLUMNS.filter(
 
 const SKELETON_VALUE: Record<StatId, string> = {
   rating: "4em",
-  uptime: "3.7em",
-  price: "4.3em",
-  freeSpace: "5.4em",
-  workingTime: "4.2em",
-  location: "4.3em",
+  uptime: "3em",
+  price: "4em",
+  freeSpace: "4.3em",
+  workingTime: "3.6em",
+  location: "5.3em",
 }
+
+const SKELETON_SPREAD = [1, 0.8, 0.95, 0.85, 0.9]
 
 const STAT_VALUES: Record<StatId, (row: ProviderRow) => ReactNode> = {
   rating: (row) => (
@@ -137,25 +139,35 @@ const StatusCell = ({ status }: { status: ProviderRow["status"] }) => {
   )
 }
 
-const SkeletonCard = () => {
+const SkeletonCard = ({ index }: { index: number }) => {
   const { t } = useTranslation()
 
   return (
-    <article className={cx(styles.card, styles.placeholder)} aria-hidden="true">
+    <article
+      className={cx(styles.card, styles.placeholder)}
+      aria-hidden="true"
+      style={{ "--shape-k": SKELETON_SPREAD[index % SKELETON_SPREAD.length] } as React.CSSProperties}
+    >
       <div className={styles.head}>
-        <span className={cx(shape(styles.shapeCircleSm), styles.orderFavorite)} />
+        <span className={cx(styles.skeletonIcon, styles.orderFavorite)}>
+          <span className={shape(styles.shapeIcon)} />
+        </span>
         <div className={cx(styles.key, styles.orderKey)}>
           <span className={cx(styles.keyText, shape(styles.keyShape))}>
             <KeyText value={KEY_PLACEHOLDER} />
           </span>
-          <span className={shape(styles.shapeCopy)} />
+          <span className={styles.skeletonCopy}>
+            <span className={shape(styles.shapeIconSm)} />
+          </span>
         </div>
         <span className={cx(styles.status, styles.orderStatus, shape(styles.statusShape))}>
           <span className={styles.dot} />
           <StatusCell status={{ tone: "green", label: t("status.stable"), ratio: WIDEST_RATIO }} />
         </span>
 
-        <span className={cx(shape(styles.shapeCircleSm), styles.orderShare)} />
+        <span className={cx(styles.skeletonIcon, styles.orderShare)}>
+          <span className={shape(styles.shapeIcon)} />
+        </span>
       </div>
 
       <div className={styles.stats}>
@@ -343,7 +355,7 @@ export const ProviderList = ({
   )
 
   const pinnedCards = loading
-    ? Array.from({ length: pinnedSkeletonRows }, (_, index) => <SkeletonCard key={index} />)
+    ? Array.from({ length: pinnedSkeletonRows }, (_, index) => <SkeletonCard key={index} index={index} />)
     : pinned.map(renderCard)
 
   return (
@@ -446,7 +458,7 @@ export const ProviderList = ({
 
       <div className={styles.list}>
         {loading
-          ? Array.from({ length: skeletonRows }, (_, index) => <SkeletonCard key={index} />)
+          ? Array.from({ length: skeletonRows }, (_, index) => <SkeletonCard key={index} index={index} />)
           : rows.map(renderCard)}
       </div>
     </div>
