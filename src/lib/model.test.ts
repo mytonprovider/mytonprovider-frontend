@@ -42,6 +42,13 @@ describe("toRow", () => {
     expect(toRow(silent, t).status.ratio).toBeNull()
     expect(toRow(silent, t).status.label).toBe("status.unavailable")
   })
+
+  it("paints a provider without proofs as a failure", () => {
+    const status = toRow({ ...silent, status: 401 }, t).status
+
+    expect(status.label).toBe("status.noProofs")
+    expect(status.tone).toBe("red")
+  })
 })
 
 describe("agoField", () => {
