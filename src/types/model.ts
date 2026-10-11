@@ -1,4 +1,4 @@
-export type StatusTone = "gray" | "green" | "yellow" | "red" | "orange"
+export type StatusTone = "gray" | "green" | "yellow" | "red"
 
 export type SortField =
   | "pubkey"

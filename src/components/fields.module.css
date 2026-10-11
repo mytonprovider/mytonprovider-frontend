@@ -24,25 +24,24 @@
   min-width: 0;
   height: var(--control-input);
   padding: 0 var(--space-6);
-  border: 1px solid var(--border-control);
+  border: 1px solid var(--border-strong);
   border-radius: var(--radius-control);
   background: var(--surface-2);
   color: var(--text);
   font-size: var(--font-lg);
   line-height: var(--line-control);
   outline: none;
-  transition:
-    border-color var(--dur-fast) ease,
-    box-shadow var(--dur-fast) ease;
+  transition: border-color var(--dur-fast) ease;
 }
 
-.input:hover {
-  border-color: var(--border-strong);
+@media (hover: hover) {
+  .input:hover {
+    border-color: var(--border-control);
+  }
 }
 
 .input:focus {
   border-color: var(--accent);
-  box-shadow: var(--focus-ring);
 }
 
 .selectWrap {
@@ -116,13 +115,18 @@
   transition: background var(--dur-fast) ease;
 }
 
-.switch:hover {
-  background: var(--border-strong);
+.switchOn {
+  background: var(--btn);
 }
 
-.switchOn,
-.switchOn:hover {
-  background: var(--btn);
+@media (hover: hover) {
+  .switch:hover {
+    background: var(--border-strong);
+  }
+
+  .switchOn:hover {
+    background: var(--btn);
+  }
 }
 
 .knob {
@@ -162,7 +166,7 @@
   min-width: 0;
   height: var(--control-field);
   padding: 0 var(--space-4);
-  border: 1px solid var(--border-control);
+  border: 1px solid var(--border-strong);
   border-radius: var(--radius-control);
   background: var(--surface-2);
   color: var(--text);
@@ -170,14 +174,17 @@
   font-variant-numeric: tabular-nums;
   text-align: center;
   outline: none;
-  transition:
-    border-color var(--dur-fast) ease,
-    box-shadow var(--dur-fast) ease;
+  transition: border-color var(--dur-fast) ease;
+}
+
+@media (hover: hover) {
+  .boundInput:hover {
+    border-color: var(--border-control);
+  }
 }
 
 .boundInput:focus {
   border-color: var(--accent);
-  box-shadow: var(--focus-ring);
 }
 
 .dash {

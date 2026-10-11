@@ -88,7 +88,7 @@ const classify = (status: number | null, ratio: number): { tone: StatusTone; key
 
   if (UNAVAILABLE.includes(status)) return { tone: "gray", key: "unavailable" }
   if (NOT_STORED.includes(status)) return { tone: "red", key: "notStored" }
-  if (NO_PROOFS.includes(status)) return { tone: "orange", key: "noProofs" }
+  if (NO_PROOFS.includes(status)) return { tone: "red", key: "noProofs" }
   return { tone: "gray", key: "unknown" }
 }
 

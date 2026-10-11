@@ -11,12 +11,20 @@
   font-weight: 500;
 }
 
-.button:hover {
-  border-color: var(--border-strong);
+@media (hover: hover) {
+  .button:hover {
+    border-color: var(--border-strong);
+    background: color-mix(in srgb, var(--text) 10%, transparent);
+  }
+}
+
+.button:active {
+  background: color-mix(in srgb, var(--text) 16%, transparent);
 }
 
 .active,
-.active:hover {
+.active:hover,
+.active:active {
   border-color: var(--btn);
   background: var(--btn);
   color: var(--btn-ink);
