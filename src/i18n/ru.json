@@ -97,7 +97,7 @@
   "provider": {
     "providerTitle": "Провайдер",
     "address": "Адрес",
-    "span": "Спан",
+    "span": "Период проверки",
     "maxBagSize": "Макс. размер бэга",
     "workingTime": "Работает",
     "lastOnline": "Последний онлайн",

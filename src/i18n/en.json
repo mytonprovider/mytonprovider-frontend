@@ -97,7 +97,7 @@
   "provider": {
     "providerTitle": "Provider",
     "address": "Address",
-    "span": "Span",
+    "span": "Check period",
     "maxBagSize": "Max bag size",
     "workingTime": "Working time",
     "lastOnline": "Last online",
