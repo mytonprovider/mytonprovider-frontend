@@ -108,7 +108,7 @@ export const ProviderDetails = ({ detail, copiedKey, onCopy }: ProviderDetailsPr
                 <span className={styles.spacer} />
                 {field.href ? (
                   <a
-                    className={cx(styles.rowValue, field.mono && styles.mono)}
+                    className={cx(styles.rowValue, styles.link, field.mono && styles.mono)}
                     href={field.href}
                     target="_blank"
                     rel="noopener noreferrer"

@@ -307,7 +307,12 @@ export const App = () => {
           )}
         </Sheet>
 
-        <Sheet open={detailKey !== null} label={t("provider.providerTitle")} onClose={closeDetail}>
+        <Sheet
+          open={detailKey !== null}
+          label={t("provider.providerTitle")}
+          title={t("provider.providerTitle")}
+          onClose={closeDetail}
+        >
           {detailKey !== null &&
             (detail ? (
               <ProviderDetails key={detailKey} detail={detail} copiedKey={copiedKey} onCopy={copy} />

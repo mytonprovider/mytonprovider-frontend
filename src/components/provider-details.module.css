@@ -227,6 +227,10 @@
   overflow-wrap: anywhere;
 }
 
+.link {
+  color: var(--accent-text);
+}
+
 .uppercase {
   text-transform: uppercase;
 }
