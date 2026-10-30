@@ -20,13 +20,13 @@ import {
   scaleForHardware,
   shortenMiddle,
   type Translate,
+  BITS_IN_MEGABIT,
   NANO,
   PING_LIMIT,
   SECONDS_IN_MINUTE,
 } from "./format"
 import { toNonBounceable } from "./ton-address"
 
-const BITS_IN_MEGABIT = 1e6
 const MBIT_PER_SECOND = "Mbit/s"
 const MILLISECONDS = "ms"
 const GRAM = "GRAM"
@@ -105,10 +105,11 @@ const toStatusView = (status: number | null, ratio: number, t: Translate): Statu
 }
 
 export const freeSpaceOf = (provider: Provider): number | null => {
-  const total = provider.telemetry?.total_provider_space_bytes
-  const used = provider.telemetry?.used_provider_space_bytes
-  if (total === null || total === undefined || used === null || used === undefined) return null
-  return Math.max(0, total - used)
+  const telemetry = provider.telemetry
+  if (!telemetry || telemetry.total_provider_space_bytes === null || telemetry.used_provider_space_bytes === null) {
+    return null
+  }
+  return Math.max(0, telemetry.total_provider_space_bytes - telemetry.used_provider_space_bytes)
 }
 
 const splitSpace = (bytes: number | null): { value: string; unit: string } => {
@@ -118,21 +119,28 @@ const splitSpace = (bytes: number | null): { value: string; unit: string } => {
   return { value: formatScaled(bytes, divisor), unit }
 }
 
-const pair = (used: number | null | undefined, total: number): string => {
+const pair = (used: number | null, total: number): string => {
   const { divisor, unit } = scaleForHardware(total)
   const whole = `${formatScaled(total, divisor)} ${unit}`
-  return used === null || used === undefined ? whole : `${formatScaled(used, divisor)} / ${whole}`
+  return used === null ? whole : `${formatScaled(used, divisor)} / ${whole}`
 }
+
+const shortKey = (value: string): string => shortenMiddle(value, 6, 6)
+
+const priceOf = (provider: Provider): string => formatNumber(provider.price / NANO, 2)
+
+const megabits = (bits: number | null | undefined): string | null =>
+  bits ? `${formatNumber(bits / BITS_IN_MEGABIT, 0)} ${MBIT_PER_SECOND}` : null
 
 export const toRow = (provider: Provider, t: Translate): ProviderRow => {
   const free = splitSpace(freeSpaceOf(provider))
 
   return {
     pubkey: provider.pubkey,
-    keyShort: shortenMiddle(provider.pubkey, 6, 6),
+    keyShort: shortKey(provider.pubkey),
     status: toStatusView(provider.status, shareOf(provider), t),
     uptime: formatPercent(provider.uptime),
-    price: formatNumber(provider.price / NANO, 2),
+    price: priceOf(provider),
     priceUnit: GRAM,
     rating: formatNumber(provider.rating, 2),
     freeSpace: free.value,
@@ -227,18 +235,8 @@ const networkSection = (telemetry: Telemetry, t: Translate): DetailSection => ({
   id: "network",
   title: t("provider.network"),
   fields: [
-    textField(
-      t("provider.speedtestDownload"),
-      telemetry.speedtest_download
-        ? `${formatNumber(telemetry.speedtest_download / BITS_IN_MEGABIT, 0)} ${MBIT_PER_SECOND}`
-        : null,
-    ),
-    textField(
-      t("provider.speedtestUpload"),
-      telemetry.speedtest_upload
-        ? `${formatNumber(telemetry.speedtest_upload / BITS_IN_MEGABIT, 0)} ${MBIT_PER_SECOND}`
-        : null,
-    ),
+    textField(t("provider.speedtestDownload"), megabits(telemetry.speedtest_download)),
+    textField(t("provider.speedtestUpload"), megabits(telemetry.speedtest_upload)),
     textField(
       t("provider.speedtestPing"),
       telemetry.speedtest_ping && telemetry.speedtest_ping < PING_LIMIT
@@ -315,7 +313,7 @@ export const toDetail = (provider: Provider, fetchedAt: number, t: Translate): P
       fields: [
         {
           label: t("table.publicKey"),
-          value: shortenMiddle(provider.pubkey, 6, 6),
+          value: shortKey(provider.pubkey),
           title: provider.pubkey,
           copy: provider.pubkey,
           uppercase: true,
@@ -324,7 +322,7 @@ export const toDetail = (provider: Provider, fetchedAt: number, t: Translate): P
         address
           ? {
               label: t("provider.address"),
-              value: shortenMiddle(address, 6, 6),
+              value: shortKey(address),
               title: address,
               href: `https://tonscan.org/address/${encodeURIComponent(address)}`,
               copy: address,
@@ -339,7 +337,7 @@ export const toDetail = (provider: Provider, fetchedAt: number, t: Translate): P
         textField(t("provider.location"), country ? [country, city].filter(Boolean).join(", ") : t("unknown")),
         textField(t("provider.uptime"), formatPercent(provider.uptime)),
         textField(t("provider.rating"), formatNumber(provider.rating, 2)),
-        textField(t("provider.price"), `${formatNumber(provider.price / NANO, 2)} ${GRAM}`),
+        textField(t("provider.price"), `${priceOf(provider)} ${GRAM}`),
       ],
     },
   ]
@@ -348,20 +346,13 @@ export const toDetail = (provider: Provider, fetchedAt: number, t: Translate): P
     sections.push(...telemetrySections(provider.telemetry, t))
   }
 
-  const share = total === 0 ? provider.status_ratio : valid / total
+  const share = shareOf(provider)
+  const status = toStatusView(provider.status, share, t)
 
   return {
-    status: toStatusView(provider.status, share, t),
+    status,
     description: reason === null ? t("status.notChecked") : reasonLabel(reason, t),
-    checks:
-      total > 0
-        ? {
-            valid,
-            total,
-            tone: classify(provider.status, share).tone,
-            percent: formatPercent(share * 100),
-          }
-        : null,
+    checks: total > 0 ? { valid, total, tone: status.tone, percent: formatPercent(share * 100) } : null,
     breakdown: total > 0 ? buildBreakdown(stats, total, t) : [],
     sections,
   }

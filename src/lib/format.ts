@@ -10,6 +10,7 @@ export const PING_LIMIT = 100000
 export const NANO = 1e9
 export const BYTES_IN_KIB = 1024
 export const BYTES_IN_MIB = 1024 ** 2
+export const BITS_IN_MEGABIT = 1e6
 
 export const formatNumber = (value: number, digits: number): string =>
   Number.isFinite(value) ? String(Number(value.toFixed(digits))) : ""
@@ -93,8 +94,8 @@ const SPEED_UNITS: Record<string, number> = {
   KIB: BYTES_IN_KIB,
   MB: 1e6,
   MIB: BYTES_IN_MIB,
-  GB: 1e9,
-  GIB: 1024 ** 3,
+  GB: BYTES_IN_GB,
+  GIB: BYTES_IN_GIB,
 }
 
 export const parseSpeed = (value: string | null | undefined): number | null => {

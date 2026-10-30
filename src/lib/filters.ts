@@ -44,9 +44,9 @@ interface GroupView {
 
 const ALL_FIELDS = FILTER_GROUPS.flatMap((group) => group.fields)
 
-const limitsOf = (field: RangeFilterField, bounds: FilterBounds | null) => {
+const limitsOf = (field: RangeFilterField, bounds: FilterBounds) => {
   const scale = field.scale ?? 1
-  const edge = bounds?.[field.from] ?? field.fallback
+  const edge = bounds[field.from] ?? field.fallback
   return { min: Math.floor(edge.min / scale), max: Math.ceil(edge.max / scale), scale }
 }
 
@@ -172,7 +172,7 @@ const numberOf = (filters: FiltersData, key: keyof FiltersData, fallback: number
 const toFieldView = (
   field: FilterField,
   filters: FiltersData,
-  bounds: FilterBounds | null,
+  bounds: FilterBounds,
   options: FilterOptions,
 ): FieldView => {
   if (field.kind === "range") {
@@ -223,7 +223,7 @@ const toFieldView = (
   }
 }
 
-export const toGroupViews = (filters: FiltersData, bounds: FilterBounds | null, options: FilterOptions): GroupView[] =>
+export const toGroupViews = (filters: FiltersData, bounds: FilterBounds, options: FilterOptions): GroupView[] =>
   FILTER_GROUPS.map((group) => ({
     id: group.id,
     active: activeIn(group.fields, filters),

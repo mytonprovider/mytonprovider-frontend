@@ -1,7 +1,17 @@
 import type { FiltersData } from "@/types/filters"
 import type { SectionId } from "@/types/model"
 import type { Provider } from "@/types/provider"
-import { BYTES_IN_GB, BYTES_IN_GIB, BYTES_IN_KIB, NANO, PING_LIMIT, SECONDS_IN_DAY, parseSpeed } from "./format"
+import {
+  BITS_IN_MEGABIT,
+  BYTES_IN_GB,
+  BYTES_IN_GIB,
+  BYTES_IN_KIB,
+  BYTES_IN_MIB,
+  NANO,
+  PING_LIMIT,
+  SECONDS_IN_DAY,
+  parseSpeed,
+} from "./format"
 import { freeSpaceOf } from "./model"
 
 const KIB_IN_MIB = 1024
@@ -40,21 +50,14 @@ interface TextFilterField {
   read: (provider: Provider) => string | null
 }
 
-interface TriFilterField {
-  kind: "tri"
+interface ToggleFilterField {
+  kind: "tri" | "flag"
   key: keyof FiltersData
   label: string
   read: (provider: Provider) => boolean | null
 }
 
-interface FlagFilterField {
-  kind: "flag"
-  key: keyof FiltersData
-  label: string
-  read: (provider: Provider) => boolean | null
-}
-
-export type FilterField = RangeFilterField | SelectFilterField | TextFilterField | TriFilterField | FlagFilterField
+export type FilterField = RangeFilterField | SelectFilterField | TextFilterField | ToggleFilterField
 
 interface FilterGroup {
   id: SectionId
@@ -171,7 +174,7 @@ export const FILTER_GROUPS: FilterGroup[] = [
         step: 1,
         integer: true,
         fallback: { min: 0, max: 40000 },
-        read: (provider) => number(provider.max_bag_size_bytes / 1024 ** 2),
+        read: (provider) => toUnits(provider.max_bag_size_bytes, BYTES_IN_MIB),
       },
     ],
   },
@@ -187,10 +190,7 @@ export const FILTER_GROUPS: FilterGroup[] = [
         integer: true,
         scale: KIB_IN_MIB,
         fallback: { min: 0, max: 1e6 },
-        read: (provider) => {
-          const speed = parseSpeed(provider.telemetry?.qd64_disk_read_speed)
-          return speed === null ? null : speed / BYTES_IN_KIB
-        },
+        read: (provider) => toUnits(parseSpeed(provider.telemetry?.qd64_disk_read_speed), BYTES_IN_KIB),
       },
       {
         kind: "range",
@@ -201,10 +201,7 @@ export const FILTER_GROUPS: FilterGroup[] = [
         integer: true,
         scale: KIB_IN_MIB,
         fallback: { min: 0, max: 1e6 },
-        read: (provider) => {
-          const speed = parseSpeed(provider.telemetry?.qd64_disk_write_speed)
-          return speed === null ? null : speed / BYTES_IN_KIB
-        },
+        read: (provider) => toUnits(parseSpeed(provider.telemetry?.qd64_disk_write_speed), BYTES_IN_KIB),
       },
     ],
   },
@@ -287,7 +284,7 @@ export const FILTER_GROUPS: FilterGroup[] = [
         label: "filters.downloadSpeed",
         step: 1,
         integer: true,
-        scale: 1e6,
+        scale: BITS_IN_MEGABIT,
         fallback: { min: 0, max: 1e9 },
         read: (provider) => number(provider.telemetry?.speedtest_download),
       },
@@ -298,7 +295,7 @@ export const FILTER_GROUPS: FilterGroup[] = [
         label: "filters.uploadSpeed",
         step: 1,
         integer: true,
-        scale: 1e6,
+        scale: BITS_IN_MEGABIT,
         fallback: { min: 0, max: 1e9 },
         read: (provider) => number(provider.telemetry?.speedtest_upload),
       },
