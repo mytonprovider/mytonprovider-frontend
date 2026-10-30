@@ -39,6 +39,22 @@
   --tone-red-ring: #edc4c4;
   --star: #eab308;
 
+  --globe-sphere: #3c4450;
+  --globe-sphere-light: #acd8fc;
+  --globe-key-light: #ffffff;
+  --globe-back-light: #dbe6f5;
+  --globe-rim: #5eb1ef;
+  --globe-plasma: #5eb1ef;
+  --globe-plasma-hot: #acd8fc;
+  --globe-atmosphere: #8ec8f6;
+  --globe-land: #fbfdff;
+  --globe-coast: #0d74ce;
+  --globe-grid: #113264;
+  --globe-arc: #0d74ce;
+  --globe-wave: #113264;
+  --globe-marker: #0d74ce;
+  --globe-glow: 1;
+
   --scrim: rgba(6, 12, 18, 0.5);
 
   --shadow-1: 0 1px 2px rgba(16, 24, 32, 0.06);
@@ -159,6 +175,22 @@
   --tone-red-text: #ea7e7f;
   --tone-red-ring: #573739;
   --star: #facc15;
+
+  --globe-sphere: #0f1c33;
+  --globe-sphere-light: #0a1426;
+  --globe-key-light: #9bdcff;
+  --globe-back-light: #ff6db8;
+  --globe-rim: #6aa8d7;
+  --globe-plasma: #67d8ff;
+  --globe-plasma-hot: #f1fbff;
+  --globe-atmosphere: #90a6bb;
+  --globe-land: #2a3546;
+  --globe-coast: #8ca2b5;
+  --globe-grid: #d3d3d3;
+  --globe-arc: #1eaefb;
+  --globe-wave: #ffffff;
+  --globe-marker: #ffffff;
+  --globe-glow: 1.5;
 
   --focus-edge: #307190;
   --focus-ring: 0 0 0 4px rgba(1, 164, 245, 0.16);
