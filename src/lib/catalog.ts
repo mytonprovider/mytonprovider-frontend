@@ -155,6 +155,7 @@ export const useCatalog = (filters: FiltersData, favorites: string[]) => {
 
   return {
     rows,
+    matching: sorted,
     pinned,
     placeholder,
     total: sorted.length,

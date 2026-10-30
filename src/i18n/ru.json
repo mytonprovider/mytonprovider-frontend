@@ -29,6 +29,22 @@
     "goUp": "Наверх",
     "retry": "Повторить"
   },
+  "globe": {
+    "label": "Карта провайдеров",
+    "open": "Открыть карту провайдеров",
+    "providers_one": "провайдер",
+    "providers_few": "провайдера",
+    "providers_many": "провайдеров",
+    "providers_other": "провайдера",
+    "countries_one": "страна",
+    "countries_few": "страны",
+    "countries_many": "стран",
+    "countries_other": "страны",
+    "cities_one": "город",
+    "cities_few": "города",
+    "cities_many": "городов",
+    "cities_other": "города"
+  },
   "footer": {
     "becomeProvider": "Стать провайдером",
     "supportChat": "Поддержка",

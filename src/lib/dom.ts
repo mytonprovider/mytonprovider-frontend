@@ -1,7 +1,7 @@
 export const reducedMotion = (): boolean => window.matchMedia("(prefers-reduced-motion: reduce)").matches
 
-export const scrollToTop = (): void => {
-  window.scrollTo({ top: 0, behavior: reducedMotion() ? "auto" : "smooth" })
+export const scrollToTop = (top = 0): void => {
+  window.scrollTo({ top, behavior: reducedMotion() ? "auto" : "smooth" })
 }
 
 export const copyText = async (value: string): Promise<boolean> => {
