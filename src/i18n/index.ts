@@ -21,6 +21,7 @@ export const initI18n = (): void => {
     lng: preferredLanguage(),
     fallbackLng: FALLBACK,
     interpolation: { escapeValue: false },
+    showSupportNotice: false,
   })
 
   document.documentElement.lang = i18n.language
