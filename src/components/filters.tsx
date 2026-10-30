@@ -47,25 +47,10 @@ export const Filters = ({ value, bounds, options, onChange }: FiltersProps) => {
       )
     }
 
-    if (field.kind === "flag") {
+    if (field.kind === "flag" || field.kind === "tri") {
+      const Toggle = field.kind === "flag" ? FlagField : TriField
       return (
-        <FlagField
-          key={field.name}
-          label={t(field.label)}
-          value={field.value}
-          onChange={(next) => onChange(field.set(next))}
-        />
-      )
-    }
-
-    if (field.kind === "tri") {
-      return (
-        <TriField
-          key={field.name}
-          label={t(field.label)}
-          value={field.value}
-          onChange={(next) => onChange(field.set(next))}
-        />
+        <Toggle key={field.name} label={t(field.label)} value={field.value} onChange={(next) => onChange(field.set(next))} />
       )
     }
 
