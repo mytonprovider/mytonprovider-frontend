@@ -10,7 +10,7 @@ const base: ApiProvider = {
   address: "EQAjRhPNqC9mY2muFNsYwYI5eqb-lsq-sD5xk3SLfrDljMwB",
   status: 0,
   status_ratio: 0.9977,
-  location: { country: "Russia", country_iso: "RU", city: "Moscow" },
+  location: { country: "Russia", country_iso: "RU", city: "Moscow", time_zone: "Europe/Moscow" },
   uptime: 99.717606,
   working_time: 27064916,
   rating: 20.415426,
@@ -98,7 +98,7 @@ export const mostlyFailing = withPubkey(
     status: 301,
     status_ratio: 0.4,
     uptime: 12.4,
-    location: { country: "Japan", country_iso: "JP", city: "Tokyo" },
+    location: { country: "Japan", country_iso: "JP", city: "Tokyo", time_zone: "Asia/Tokyo" },
     statuses_reason_stats: [
       { reason: 301, cnt: 6 },
       { reason: 0, cnt: 4 },
@@ -114,7 +114,7 @@ export const veteran = withPubkey(
     working_time: 32486400,
     price: 4000000000,
     max_span: 2592000,
-    location: { country: "Japan", country_iso: "JP", city: "Osaka" },
+    location: { country: "Japan", country_iso: "JP", city: "Osaka", time_zone: "Asia/Tokyo" },
     statuses_reason_stats: [
       { reason: 401, cnt: 1 },
       { reason: 0, cnt: 432 },
