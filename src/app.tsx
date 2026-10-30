@@ -12,6 +12,7 @@ import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { Filters } from "@/components/filters"
 import { FilterButton } from "@/components/filter-button"
+import { Globe } from "@/components/globe"
 import { IconButton } from "@/components/icon-button"
 import { ProviderDetails, ProviderDetailsSkeleton } from "@/components/provider-details"
 import { ProviderList } from "@/components/provider-list"
@@ -163,6 +164,8 @@ export const App = () => {
           <h1 className={styles.title}>{t("mainTitle")}</h1>
           <p className={styles.subtitle}>{t("mainDescription")}</p>
         </div>
+
+        <Globe providers={catalog.matching} ready={!catalog.loading} />
 
         <div className={styles.searchRow}>
           <div className={styles.search}>

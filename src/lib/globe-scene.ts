@@ -56,6 +56,7 @@ interface GlobeOptions {
 
 export interface GlobeScene {
   covers: (event: PointerEvent | MouseEvent) => boolean
+  dragged: () => boolean
   setNodes: (nodes: GlobeNode[]) => void
   setInteractive: (interactive: boolean) => void
   kick: (radians: number) => void
@@ -600,6 +601,7 @@ export const mountGlobe = (host: HTMLElement, options: GlobeOptions): GlobeScene
   const center = { x: 0, y: 0 }
   const tilt = { pitch: 0, roll: 0 }
   let press: Press | null = null
+  let dragged = false
   let rect = host.getBoundingClientRect()
 
   const applyTheme = () => {
@@ -902,6 +904,7 @@ export const mountGlobe = (host: HTMLElement, options: GlobeOptions): GlobeScene
     if (!press || event.pointerId !== press.id) return
     if (host.hasPointerCapture(event.pointerId)) host.releasePointerCapture(event.pointerId)
     const tapped = Math.hypot(event.clientX - press.startX, event.clientY - press.startY) < GLOBE.tapSlop
+    dragged = press.drag && !tapped
     if (event.pointerType === "touch") {
       hoveredId = event.type === "pointerup" && tapped ? markerAt(event) : hoveredId
       overSphere = false
@@ -1054,6 +1057,7 @@ export const mountGlobe = (host: HTMLElement, options: GlobeOptions): GlobeScene
 
   return {
     covers: overGlobe,
+    dragged: () => dragged,
     setNodes,
     setInteractive: (value) => {
       interactive = value
