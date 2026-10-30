@@ -55,6 +55,9 @@ export default defineConfig(({ mode }) => {
         },
       },
     },
+    build: {
+      chunkSizeWarningLimit: 900,
+    },
     server: {
       host: true,
     },
