@@ -56,8 +56,11 @@ export const nextSnapshot = (providers: Provider[], now: number): Snapshot => ({
   fetchedAt: now,
 })
 
+const shows = (provider: Provider, filters: FiltersData, query: string, now: number): boolean =>
+  matches(provider, filters, now) && matchesQuery(provider, query)
+
 export const countMatching = (providers: Provider[], filters: FiltersData, query: string, now: number): number =>
-  providers.filter((provider) => matches(provider, filters, now) && matchesQuery(provider, query)).length
+  providers.filter((provider) => shows(provider, filters, query, now)).length
 
 export const useCatalog = (filters: FiltersData, favorites: string[]) => {
   const { t } = useTranslation()
@@ -110,9 +113,7 @@ export const useCatalog = (filters: FiltersData, favorites: string[]) => {
   }, [])
 
   const sorted = useMemo(() => {
-    const found = snapshot.providers.filter(
-      (provider) => matches(provider, filters, snapshot.fetchedAt) && matchesQuery(provider, query),
-    )
+    const found = snapshot.providers.filter((provider) => shows(provider, filters, query, snapshot.fetchedAt))
     return sortProviders(found, sortField, sortDirection)
   }, [snapshot.providers, snapshot.fetchedAt, filters, query, sortField, sortDirection])
 

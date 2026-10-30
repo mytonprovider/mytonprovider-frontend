@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react"
+import { useCallback, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type RefObject } from "react"
 
 const MOBILE = "(max-width: 1119px)"
 const INTERACTIVE = "button, a, input, select, textarea, summary"
@@ -20,7 +20,7 @@ interface SheetDrag {
   dragging: boolean
   offset: number | null
   onPointerDown: (event: ReactPointerEvent<HTMLElement>) => void
-  bodyRef: (node: HTMLDivElement | null) => void
+  body: RefObject<HTMLDivElement | null>
 }
 
 export const useSheetDrag = (open: boolean, onClose: () => void): SheetDrag => {
@@ -93,9 +93,5 @@ export const useSheetDrag = (open: boolean, onClose: () => void): SheetDrag => {
     }
   }, [onClose])
 
-  const bodyRef = useCallback((node: HTMLDivElement | null) => {
-    body.current = node
-  }, [])
-
-  return { dragging, offset, onPointerDown, bodyRef }
+  return { dragging, offset, onPointerDown, body }
 }

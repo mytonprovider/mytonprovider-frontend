@@ -129,13 +129,11 @@ export const App = () => {
 
   const matching = filtersOpen ? catalog.countFor(draft) : catalog.total
 
-  const filtersTouched = useMemo(() => !isPristine(filters), [filters])
-  const draftTouched = useMemo(() => !isPristine(draft), [draft])
-  const draftFilters = useMemo(() => countActiveFilters(draft), [draft])
+  const filtersTouched = !isPristine(filters)
+  const draftTouched = !isPristine(draft)
+  const draftFilters = countActiveFilters(draft)
 
-  useEffect(() => {
-    if (detailKey !== null) setViewedKey(detailKey)
-  }, [detailKey])
+  if (detailKey !== null && detailKey !== viewedKey) setViewedKey(detailKey)
 
   const { detailFor } = catalog
   const detail = useMemo(() => (detailKey ? detailFor(detailKey) : null), [detailFor, detailKey])
@@ -285,7 +283,6 @@ export const App = () => {
         <Sheet
           open={filtersOpen}
           label={t("filters.title")}
-          title={t("filters.title")}
           badge={draftFilters}
           onReset={draftTouched ? resetFilters : undefined}
           onClose={closeFilters}
@@ -310,7 +307,6 @@ export const App = () => {
         <Sheet
           open={detailKey !== null}
           label={t("provider.providerTitle")}
-          title={t("provider.providerTitle")}
           onClose={closeDetail}
         >
           {detailKey !== null &&

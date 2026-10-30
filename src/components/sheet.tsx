@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react"
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
 import { X } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import { useSheetDrag } from "@/lib/sheet-drag"
@@ -10,7 +10,6 @@ const LEAVE_GUARD_MS = 400
 interface SheetProps {
   open: boolean
   label: string
-  title?: string
   badge?: number
   footer?: ReactNode
   children: ReactNode
@@ -18,7 +17,7 @@ interface SheetProps {
   onClose: () => void
 }
 
-export const Sheet = ({ open, label, title, badge, footer, children, onReset, onClose }: SheetProps) => {
+export const Sheet = ({ open, label, badge, footer, children, onReset, onClose }: SheetProps) => {
   const { t } = useTranslation()
   const ref = useRef<HTMLDialogElement>(null)
   const timer = useRef(0)
@@ -68,7 +67,7 @@ export const Sheet = ({ open, label, title, badge, footer, children, onReset, on
       tabIndex={-1}
       data-dragging={drag.dragging ? "" : undefined}
       data-leaving={leaving ? "" : undefined}
-      style={drag.offset === null ? undefined : ({ "--sheet-y": `${drag.offset}px` } as CSSProperties)}
+      style={drag.offset === null ? undefined : ({ "--sheet-y": `${drag.offset}px` } as React.CSSProperties)}
       onPointerDown={(event) => {
         pressedBackdrop.current = event.target === ref.current
       }}
@@ -83,7 +82,7 @@ export const Sheet = ({ open, label, title, badge, footer, children, onReset, on
     >
       <div className={styles.header} onPointerDown={drag.onPointerDown}>
         <span className={styles.grabber} aria-hidden="true" />
-        {title && <span className={styles.title}>{title}</span>}
+        <span className={styles.title}>{label}</span>
         {badge !== undefined && badge > 0 && <span className={styles.badge}>{badge}</span>}
         <span className={styles.spacer} />
         {onReset && (
@@ -96,7 +95,7 @@ export const Sheet = ({ open, label, title, badge, footer, children, onReset, on
         </IconButton>
       </div>
 
-      <div className={styles.body} ref={drag.bodyRef} onPointerDown={drag.onPointerDown}>
+      <div className={styles.body} ref={drag.body} onPointerDown={drag.onPointerDown}>
         {children}
       </div>
 
