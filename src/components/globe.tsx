@@ -68,6 +68,7 @@ const frameOf = (m: Metrics, progress: number, hover: number, band: number, widt
     centerY: lerp(rise + gapOf(m) + rest.radius, rise + room / 2 + 4, progress),
     tilt: lerp(0.12, 1, progress),
     visible: rise + band,
+    resting: progress === 0,
     glow: hover * (1 - progress),
   }
 }

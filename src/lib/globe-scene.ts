@@ -40,6 +40,7 @@ export interface GlobeFrame {
   centerY: number
   tilt: number
   visible: number
+  resting: boolean
   glow: number
 }
 
@@ -123,11 +124,11 @@ const GLOBE = {
   startLng: 40,
   cameraFov: 44,
   maxDpr: 1.75,
-  frameBudget: 1 / 30,
+  frameBudget: 1 / 60,
   revealFrames: 8,
   revealDelay: 0.28,
   radius: 100,
-  sphereSegments: 90,
+  sphereSegments: 64,
   gridStep: 10,
   gridSample: 2,
   landAltitude: 0.006,
@@ -158,7 +159,7 @@ const GLOBE = {
   arcLongAltitude: 0.14,
   arcFullHeightDistance: 120,
   arcStroke: 0.3,
-  arcSides: 6,
+  arcSides: 4,
   arcStep: 2,
   arcMinSteps: 12,
   arcDashShare: 0.38,
@@ -172,6 +173,7 @@ const GLOBE = {
   arcFadePower: 1.6,
   arcOcclusionSoftness: 22,
   arcSeed: 11235813,
+  arcCacheLimit: 300,
   tooltipCycle: 4.2,
   tooltipMinGap: 210,
   tooltipMinOpacity: 0.5,
@@ -461,7 +463,7 @@ export const mountGlobe = (host: HTMLElement, options: GlobeOptions): GlobeScene
   globe.add(sphere, grid)
 
   const occluder = new Mesh(
-    new SphereGeometry(1, 96, 48),
+    new SphereGeometry(1, 64, 32),
     new MeshBasicMaterial({ colorWrite: false, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 }),
   )
   occluder.renderOrder = -100
@@ -493,10 +495,10 @@ export const mountGlobe = (host: HTMLElement, options: GlobeOptions): GlobeScene
     glowOpacity: { value: LAYER_OPACITY.plasma },
     time: plasmaTime,
   })
-  const rim = new Mesh(new SphereGeometry(1, 128, 64), rimMaterial)
+  const rim = new Mesh(new SphereGeometry(1, 64, 32), rimMaterial)
   rim.renderOrder = 1
   rim.scale.setScalar(radius * 1.006)
-  const plasma = new Mesh(new SphereGeometry(1, 96, 48), plasmaMaterial)
+  const plasma = new Mesh(new SphereGeometry(1, 64, 32), plasmaMaterial)
   plasma.renderOrder = 2
   plasma.scale.setScalar(radius * 1.026)
   axis.add(rim, plasma)
@@ -603,6 +605,8 @@ export const mountGlobe = (host: HTMLElement, options: GlobeOptions): GlobeScene
   let press: Press | null = null
   let dragged = false
   let rect = host.getBoundingClientRect()
+  let canvasSize = ""
+  let canvasHeight = rect.height
 
   const applyTheme = () => {
     const style = getComputedStyle(host)
@@ -628,7 +632,14 @@ export const mountGlobe = (host: HTMLElement, options: GlobeOptions): GlobeScene
     changed = true
   }
 
-  const arcGeometry = (arc: Arc) => {
+  const tubes = new Map<string, { geometry: TubeGeometry; length: number }>()
+
+  const tubeKey = (arc: Arc) => `${arc.start.id}>${arc.end.id}|${arc.long}`
+
+  const tubeOf = (arc: Arc) => {
+    const key = tubeKey(arc)
+    const cached = tubes.get(key)
+    if (cached) return cached
     const from = toSurface(arc.start.lat, arc.start.lng).normalize()
     const to = toSurface(arc.end.lat, arc.end.lng).normalize()
     const axis = new Vector3().crossVectors(from, to).normalize()
@@ -646,8 +657,15 @@ export const mountGlobe = (host: HTMLElement, options: GlobeOptions): GlobeScene
         .multiplyScalar(radius * (1 + height * Math.sin(Math.PI * t)))
     })
     const curve = new CatmullRomCurve3(points)
-    const geometry = new TubeGeometry(curve, steps * 2, GLOBE.arcStroke / 2, GLOBE.arcSides, false)
-    const length = curve.getLength()
+    const geometry = new TubeGeometry(curve, steps, GLOBE.arcStroke / 2, GLOBE.arcSides, false)
+    const tube = { geometry, length: curve.getLength() }
+    if (tubes.size >= GLOBE.arcCacheLimit) tubes.clear()
+    tubes.set(key, tube)
+    return tube
+  }
+
+  const arcGeometry = (arc: Arc) => {
+    const { geometry, length } = tubeOf(arc)
     const dash = clamp(length * GLOBE.arcDashShare, GLOBE.arcDashMin, GLOBE.arcDashMax)
     const gap = length + arc.pause * GLOBE.arcSpeed
     const count = geometry.getAttribute("position").count
@@ -659,63 +677,78 @@ export const mountGlobe = (host: HTMLElement, options: GlobeOptions): GlobeScene
     return geometry
   }
 
-  const setNodes = (nodes: GlobeNode[]) => {
-    for (const marker of markers) {
-      for (const mesh of [marker.mesh, marker.wave]) {
-        if (!mesh) continue
-        layer.remove(mesh)
-        mesh.material.dispose()
-      }
+  const addMarker = (node: GlobeNode, offset: number): Marker => {
+    const normal = toSurface(node.lat, node.lng).normalize()
+    const mesh = new Mesh(markerGeometry, new MeshBasicMaterial({ transparent: true, depthTest: false, depthWrite: false }))
+    mesh.material.toneMapped = false
+    mesh.material.color.set(colors.marker)
+    mesh.renderOrder = 1000
+    mesh.frustumCulled = false
+    mesh.quaternion.setFromUnitVectors(new Vector3(0, 1, 0), normal)
+    layer.add(mesh)
+
+    const wave = reduced
+      ? null
+      : new Mesh(waveGeometry, new MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false, side: DoubleSide }))
+    if (wave) {
+      wave.material.toneMapped = false
+      wave.material.color.set(colors.wave)
+      wave.renderOrder = 990
+      wave.frustumCulled = false
+      wave.position.copy(normal).multiplyScalar(radius * (1 + GLOBE.waveAltitude))
+      wave.quaternion.setFromUnitVectors(new Vector3(0, 0, 1), normal)
+      layer.add(wave)
     }
 
+    return {
+      id: node.id,
+      lng: node.lng,
+      born: Number.POSITIVE_INFINITY,
+      mesh,
+      wave,
+      normal,
+      offset,
+      size: 0,
+      height: GLOBE.markerRestHeight,
+    }
+  }
+
+  const removeMarker = (marker: Marker) => {
+    for (const mesh of [marker.mesh, marker.wave]) {
+      if (!mesh) continue
+      layer.remove(mesh)
+      mesh.material.dispose()
+    }
+  }
+
+  let arcKey = ""
+
+  const setNodes = (nodes: GlobeNode[]) => {
+    const previous = new Map(markers.map((marker) => [marker.id, marker]))
+    const fresh: Marker[] = []
     markers = nodes.map((node, i) => {
-      const normal = toSurface(node.lat, node.lng).normalize()
-      const mesh = new Mesh(markerGeometry, new MeshBasicMaterial({ transparent: true, depthTest: false, depthWrite: false }))
-      mesh.material.toneMapped = false
-      mesh.material.color.set(colors.marker)
-      mesh.renderOrder = 1000
-      mesh.frustumCulled = false
-      mesh.quaternion.setFromUnitVectors(new Vector3(0, 1, 0), normal)
-      layer.add(mesh)
-
-      const wave = reduced
-        ? null
-        : new Mesh(waveGeometry, new MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false, side: DoubleSide }))
-      if (wave) {
-        wave.material.toneMapped = false
-        wave.material.color.set(colors.wave)
-        wave.renderOrder = 990
-        wave.frustumCulled = false
-        wave.position.copy(normal).multiplyScalar(radius * (1 + GLOBE.waveAltitude))
-        wave.quaternion.setFromUnitVectors(new Vector3(0, 0, 1), normal)
-        layer.add(wave)
-      }
-
-      return {
-        id: node.id,
-        lng: node.lng,
-        born: Number.POSITIVE_INFINITY,
-        mesh,
-        wave,
-        normal,
-        offset: i / nodes.length,
-        size: markerRadius * markerScale(providersAt(node)),
-        height: GLOBE.markerRestHeight,
-      }
+      const marker = previous.get(node.id) ?? addMarker(node, i / nodes.length)
+      if (!previous.delete(node.id)) fresh.push(marker)
+      marker.size = markerRadius * markerScale(providersAt(node))
+      return marker
     })
+    for (const marker of previous.values()) removeMarker(marker)
 
-    const arcParts = reduced ? [] : arcsOf(nodes).map(arcGeometry)
-    arcMesh.geometry.dispose()
-    arcMesh.geometry = (arcParts.length > 0 && mergeGeometries(arcParts)) || new BufferGeometry()
-    for (const part of arcParts) part.dispose()
-    stamp(timer.getElapsed())
+    const arcs = reduced ? [] : arcsOf(nodes)
+    const key = arcs.map((arc) => `${tubeKey(arc)}|${arc.pause}|${arc.phase}`).join(" ")
+    if (key !== arcKey) {
+      arcKey = key
+      const arcParts = arcs.map(arcGeometry)
+      arcMesh.geometry.dispose()
+      arcMesh.geometry = (arcParts.length > 0 && mergeGeometries(arcParts)) || new BufferGeometry()
+    }
+    if (revealed) stamp(fresh, timer.getElapsed())
     for (const tip of tooltips) tip.id = null
     changed = true
   }
 
-  const stamp = (start: number) => {
-    arcBorn.value = start
-    const order = [...markers].sort((a, b) => a.lng - b.lng)
+  const stamp = (fresh: Marker[], start: number) => {
+    const order = [...fresh].sort((a, b) => a.lng - b.lng)
     order.forEach((marker, rank) => {
       marker.born = start + (order.length > 1 ? (rank / (order.length - 1)) * GLOBE.markerSpread : 0)
     })
@@ -761,7 +794,7 @@ export const mountGlobe = (host: HTMLElement, options: GlobeOptions): GlobeScene
 
   const screenOf = (mesh: Object3D) => {
     mesh.getWorldPosition(projected).project(camera)
-    return { x: (projected.x * 0.5 + 0.5) * rect.width, y: (-projected.y * 0.5 + 0.5) * rect.height }
+    return { x: (projected.x * 0.5 + 0.5) * rect.width, y: (-projected.y * 0.5 + 0.5) * canvasHeight }
   }
   const frontMarkers = () =>
     markers
@@ -848,7 +881,7 @@ export const mountGlobe = (host: HTMLElement, options: GlobeOptions): GlobeScene
   const origin = new Vector3()
   const overGlobe = (event: PointerEvent | MouseEvent) => {
     rect = host.getBoundingClientRect()
-    pointer.set(((event.clientX - rect.left) / rect.width) * 2 - 1, -((event.clientY - rect.top) / rect.height) * 2 + 1)
+    pointer.set(((event.clientX - rect.left) / rect.width) * 2 - 1, -((event.clientY - rect.top) / canvasHeight) * 2 + 1)
     raycaster.setFromCamera(pointer, camera)
     return raycaster.ray.distanceSqToPoint(origin) <= (radius * GLOBE.grabScale) ** 2
   }
@@ -930,7 +963,7 @@ export const mountGlobe = (host: HTMLElement, options: GlobeOptions): GlobeScene
   const resize = () => {
     rect = host.getBoundingClientRect()
     if (!rect.width || !rect.height) return
-    renderer.setSize(rect.width, rect.height, false)
+    canvasSize = ""
     camera.aspect = rect.width / rect.height
     for (const tip of tooltips) tip.id = null
     changed = true
@@ -944,13 +977,20 @@ export const mountGlobe = (host: HTMLElement, options: GlobeOptions): GlobeScene
     const view = options.frame(width)
     const half = Math.tan(toRad(GLOBE.cameraFov / 2))
     camera.position.z = radius / Math.sin(Math.atan((view.radius / (height / 2)) * half))
-    camera.setViewOffset(width, height, 0, height / 2 - view.centerY, width, height)
     globePx = view.radius
     center.x = width / 2
     center.y = view.centerY
     axis.rotation.set(GLOBE.tiltX * view.tilt + tilt.pitch, 0, GLOBE.tiltZ + tilt.roll)
     const visible = clamp(Math.ceil(view.visible), 0, height)
-    renderer.setScissor(0, height - visible, width, visible)
+    const cut = view.resting ? visible : height
+    if (canvasSize !== `${width}x${cut}`) {
+      canvasSize = `${width}x${cut}`
+      canvasHeight = cut
+      renderer.setSize(width, cut, false)
+      renderer.domElement.style.height = `${cut}px`
+    }
+    camera.setViewOffset(width, height, 0, height / 2 - view.centerY, width, cut)
+    renderer.setScissor(0, cut - visible, width, visible)
     atmospherePower.value = GLOBE.atmospherePower * Math.max(1, view.radius / GLOBE.atmosphereRadius)
     rimMaterial.uniforms.rimOpacity.value = LAYER_OPACITY.rim * (1 + GLOBE.rimGlow * glow * view.glow)
     atmosphere.material.uniforms.opacity.value = LAYER_OPACITY.atmosphere * (1 + GLOBE.atmosphereGlow * glow * view.glow)
@@ -978,8 +1018,7 @@ export const mountGlobe = (host: HTMLElement, options: GlobeOptions): GlobeScene
     }
     const moving = dragging || settling
     if (reduced && revealed && !moving && !changed) return
-    const budget = interactive || moving || changed ? 0 : GLOBE.frameBudget
-    if (time - lastRender < budget - 0.002) return
+    if (time - lastRender < GLOBE.frameBudget - 0.002) return
     const delta = Math.min(time - lastRender, 0.1)
     lastRender = time
     changed = false
@@ -1005,7 +1044,8 @@ export const mountGlobe = (host: HTMLElement, options: GlobeOptions): GlobeScene
     if (!revealed && rendered >= GLOBE.revealFrames && time >= GLOBE.revealDelay) {
       revealed = true
       host.toggleAttribute("data-ready", true)
-      stamp(time)
+      arcBorn.value = time
+      stamp(markers, time)
     }
   }
 

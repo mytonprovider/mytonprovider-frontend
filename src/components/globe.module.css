@@ -20,6 +20,11 @@
   mask-image: linear-gradient(transparent, #000 var(--rise), #000 calc(var(--cut) - var(--fade)), transparent var(--cut));
 }
 
+.band[data-state="opening"] ~ *,
+.band[data-state="closing"] ~ * {
+  will-change: transform;
+}
+
 .band[data-state="open"] .stage {
   pointer-events: auto;
 }
