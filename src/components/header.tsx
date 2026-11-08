@@ -6,7 +6,7 @@ import logo from "./logo.svg"
 import { IconButton } from "./icon-button"
 import styles from "./header.module.css"
 
-export default function Header() {
+export const Header = () => {
   const { t, i18n } = useTranslation()
   const { dark, toggle } = useTheme()
 

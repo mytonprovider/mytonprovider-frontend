@@ -21,7 +21,7 @@ const LINKS = [
   },
 ]
 
-export default function Footer({ ref }: { ref?: Ref<HTMLElement> }) {
+export const Footer = ({ ref }: { ref?: Ref<HTMLElement> }) => {
   const { t } = useTranslation()
 
   return (

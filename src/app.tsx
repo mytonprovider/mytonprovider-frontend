@@ -8,10 +8,11 @@ import { FAVORITES_KEY, readStoredStrings, removeStored, writeStored } from "@/l
 import { copyText, scrollToTop } from "@/lib/dom"
 import { cx } from "@/lib/cx"
 import { providerUrl, useOpenProvider } from "@/lib/route"
-import Header from "@/components/header"
-import Footer from "@/components/footer"
+import { Header } from "@/components/header"
+import { Footer } from "@/components/footer"
 import { Filters } from "@/components/filters"
 import { FilterButton } from "@/components/filter-button"
+import { Globe } from "@/components/globe"
 import { IconButton } from "@/components/icon-button"
 import { ProviderDetails, ProviderDetailsSkeleton } from "@/components/provider-details"
 import { ProviderList } from "@/components/provider-list"
@@ -129,13 +130,11 @@ export const App = () => {
 
   const matching = filtersOpen ? catalog.countFor(draft) : catalog.total
 
-  const filtersTouched = useMemo(() => !isPristine(filters), [filters])
-  const draftTouched = useMemo(() => !isPristine(draft), [draft])
-  const draftFilters = useMemo(() => countActiveFilters(draft), [draft])
+  const filtersTouched = !isPristine(filters)
+  const draftTouched = !isPristine(draft)
+  const draftFilters = countActiveFilters(draft)
 
-  useEffect(() => {
-    if (detailKey !== null) setViewedKey(detailKey)
-  }, [detailKey])
+  if (detailKey !== null && detailKey !== viewedKey) setViewedKey(detailKey)
 
   const { detailFor } = catalog
   const detail = useMemo(() => (detailKey ? detailFor(detailKey) : null), [detailFor, detailKey])
@@ -165,6 +164,8 @@ export const App = () => {
           <h1 className={styles.title}>{t("mainTitle")}</h1>
           <p className={styles.subtitle}>{t("mainDescription")}</p>
         </div>
+
+        <Globe providers={catalog.matching} ready={!catalog.loading} />
 
         <div className={styles.searchRow}>
           <div className={styles.search}>
@@ -285,7 +286,6 @@ export const App = () => {
         <Sheet
           open={filtersOpen}
           label={t("filters.title")}
-          title={t("filters.title")}
           badge={draftFilters}
           onReset={draftTouched ? resetFilters : undefined}
           onClose={closeFilters}
@@ -310,7 +310,6 @@ export const App = () => {
         <Sheet
           open={detailKey !== null}
           label={t("provider.providerTitle")}
-          title={t("provider.providerTitle")}
           onClose={closeDetail}
         >
           {detailKey !== null &&

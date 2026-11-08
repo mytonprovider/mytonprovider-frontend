@@ -11,24 +11,23 @@ import { PAGE_SIZE } from "@/lib/catalog"
 import { STATUS_KEYS } from "@/lib/model"
 import { providerUrl } from "@/lib/route"
 
-type StatId = "rating" | "uptime" | "price" | "freeSpace" | "workingTime" | "location"
+type StatId = Exclude<SortField, "pubkey" | "status">
 
 interface Column {
-  id: StatId | "pubkey" | "status"
+  id: SortField
   label: string
   hint?: string
-  sort?: SortField
 }
 
 const COLUMNS: Column[] = [
-  { id: "pubkey", label: "table.publicKey", sort: "pubkey" },
-  { id: "rating", label: "table.rating", sort: "rating" },
-  { id: "status", label: "table.status", hint: "status.accessibleFilesHint", sort: "status" },
-  { id: "uptime", label: "table.uptime", hint: "status.uptimeHint", sort: "uptime" },
-  { id: "price", label: "table.price", hint: "status.priceHint", sort: "price" },
-  { id: "freeSpace", label: "table.freeSpace", sort: "freeSpace" },
-  { id: "workingTime", label: "table.workingTime", sort: "workingTime" },
-  { id: "location", label: "table.location", sort: "location" },
+  { id: "pubkey", label: "table.publicKey" },
+  { id: "rating", label: "table.rating" },
+  { id: "status", label: "table.status", hint: "status.accessibleFilesHint" },
+  { id: "uptime", label: "table.uptime", hint: "status.uptimeHint" },
+  { id: "price", label: "table.price", hint: "status.priceHint" },
+  { id: "freeSpace", label: "table.freeSpace" },
+  { id: "workingTime", label: "table.workingTime" },
+  { id: "location", label: "table.location" },
 ]
 
 const STAGGER_STEP_MS = 28
@@ -46,10 +45,6 @@ const ORDER: Record<StatId, string> = {
   workingTime: styles.orderWorkingTime,
   location: styles.orderLocation,
 }
-
-const SORT_COLUMNS = COLUMNS.filter(
-  (column): column is Column & { sort: SortField } => column.sort !== undefined,
-)
 
 const STAT_COLUMNS = COLUMNS.filter(
   (column): column is Column & { id: StatId } => column.id !== "pubkey" && column.id !== "status",
@@ -367,8 +362,7 @@ export const ProviderList = ({
       <div className={styles.headerRow}>
         <span />
         {COLUMNS.map((column) => {
-          const sort = column.sort
-          const isActive = sort !== undefined && sort === sortField
+          const isActive = column.id === sortField
 
           const content = (
             <>
@@ -383,22 +377,13 @@ export const ProviderList = ({
                   <CircleHelp className={styles.hintIcon} />
                 </span>
               )}
-              {sort !== undefined &&
-                (isActive && sortDirection === "asc" ? (
-                  <ArrowUp className={styles.sortIcon} aria-hidden="true" />
-                ) : (
-                  <ArrowDown className={cx(styles.sortIcon, !isActive && styles.sortIconIdle)} aria-hidden="true" />
-                ))}
+              {isActive && sortDirection === "asc" ? (
+                <ArrowUp className={styles.sortIcon} aria-hidden="true" />
+              ) : (
+                <ArrowDown className={cx(styles.sortIcon, !isActive && styles.sortIconIdle)} aria-hidden="true" />
+              )}
             </>
           )
-
-          if (sort === undefined) {
-            return (
-              <span key={column.id} className={styles.headerCell}>
-                {content}
-              </span>
-            )
-          }
 
           const className = cx(
             styles.headerCell,
@@ -418,7 +403,7 @@ export const ProviderList = ({
               type="button"
               className={className}
               aria-label={announced}
-              onClick={() => onSort(sort)}
+              onClick={() => onSort(column.id)}
             >
               {content}
             </button>
@@ -438,8 +423,8 @@ export const ProviderList = ({
             aria-label={t("ui.sortBy")}
             onChange={(event) => onSort(event.target.value as SortField)}
           >
-            {SORT_COLUMNS.map((column) => (
-              <option key={column.id} value={column.sort}>
+            {COLUMNS.map((column) => (
+              <option key={column.id} value={column.id}>
                 {t(column.label)}
               </option>
             ))}

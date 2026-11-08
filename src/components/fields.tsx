@@ -57,7 +57,7 @@ export const SelectField = ({ name, label, value, placeholder, options, onChange
   </label>
 )
 
-interface TriFieldProps {
+interface ToggleFieldProps {
   label: string
   value: boolean | undefined
   onChange: (value: boolean | undefined) => void
@@ -69,7 +69,7 @@ const TRI_OPTIONS: { key: string; option: boolean | undefined }[] = [
   { key: "no", option: false },
 ]
 
-export const TriField = ({ label, value, onChange }: TriFieldProps) => {
+export const TriField = ({ label, value, onChange }: ToggleFieldProps) => {
   const { t } = useTranslation()
 
   const activeIndex = TRI_OPTIONS.findIndex(({ option }) => option === value)
@@ -101,13 +101,7 @@ export const TriField = ({ label, value, onChange }: TriFieldProps) => {
   )
 }
 
-interface FlagFieldProps {
-  label: string
-  value: boolean | undefined
-  onChange: (value: boolean | undefined) => void
-}
-
-export const FlagField = ({ label, value, onChange }: FlagFieldProps) => {
+export const FlagField = ({ label, value, onChange }: ToggleFieldProps) => {
   const on = value === true
 
   return (
@@ -141,6 +135,31 @@ interface RangeFieldProps {
 }
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value))
+
+interface BoundInputProps {
+  name: string
+  label: string
+  value: string
+  onChange: (value: string) => void
+  onCommit: (value: string) => void
+}
+
+const BoundInput = ({ name, label, value, onChange, onCommit }: BoundInputProps) => (
+  <input
+    className={styles.boundInput}
+    type="text"
+    inputMode="decimal"
+    name={name}
+    autoComplete="off"
+    aria-label={label}
+    value={value}
+    onChange={(event) => onChange(event.target.value)}
+    onBlur={(event) => onCommit(event.target.value)}
+    onKeyDown={(event) => {
+      if (event.key === "Enter") event.currentTarget.blur()
+    }}
+  />
+)
 
 export const RangeField = ({ fromName, toName, label, min, max, step, integer, low, high, onChange }: RangeFieldProps) => {
   const { t } = useTranslation()
@@ -176,34 +195,20 @@ export const RangeField = ({ fromName, toName, label, min, max, step, integer, l
       <div className={styles.rangeHead}>
         <span className={styles.label}>{label}</span>
         <span className={styles.bounds}>
-          <input
-            className={styles.boundInput}
-            type="text"
-            inputMode="decimal"
+          <BoundInput
             name={fromName}
-            autoComplete="off"
-            aria-label={fromLabel}
+            label={fromLabel}
             value={text.lowText}
-            onChange={(event) => setText({ ...text, lowText: event.target.value })}
-            onBlur={(event) => commit(event.target.value, "low")}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") event.currentTarget.blur()
-            }}
+            onChange={(next) => setText({ ...text, lowText: next })}
+            onCommit={(next) => commit(next, "low")}
           />
           <span className={styles.dash}>–</span>
-          <input
-            className={styles.boundInput}
-            type="text"
-            inputMode="decimal"
+          <BoundInput
             name={toName}
-            autoComplete="off"
-            aria-label={toLabel}
+            label={toLabel}
             value={text.highText}
-            onChange={(event) => setText({ ...text, highText: event.target.value })}
-            onBlur={(event) => commit(event.target.value, "high")}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") event.currentTarget.blur()
-            }}
+            onChange={(next) => setText({ ...text, highText: next })}
+            onCommit={(next) => commit(next, "high")}
           />
         </span>
       </div>

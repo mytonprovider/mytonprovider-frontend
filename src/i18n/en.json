@@ -29,6 +29,16 @@
     "goUp": "Back to top",
     "retry": "Retry"
   },
+  "globe": {
+    "label": "Provider map",
+    "open": "Open the provider map",
+    "providers_one": "provider",
+    "providers_other": "providers",
+    "countries_one": "country",
+    "countries_other": "countries",
+    "cities_one": "city",
+    "cities_other": "cities"
+  },
   "footer": {
     "becomeProvider": "Become a provider",
     "supportChat": "Support chat",

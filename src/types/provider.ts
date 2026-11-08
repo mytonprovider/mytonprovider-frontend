@@ -21,16 +21,17 @@ export interface ApiTelemetry {
 
 export interface Telemetry
   extends Omit<ApiTelemetry, "total_provider_space" | "used_provider_space" | "total_ram" | "usage_ram"> {
-  total_provider_space_bytes?: number | null
-  used_provider_space_bytes?: number | null
-  total_ram_bytes?: number | null
-  usage_ram_bytes?: number | null
+  total_provider_space_bytes: number | null
+  used_provider_space_bytes: number | null
+  total_ram_bytes: number | null
+  usage_ram_bytes: number | null
 }
 
-interface ProviderLocation {
+export interface ProviderLocation {
   country: string
   country_iso: string
   city: string
+  time_zone: string
 }
 
 export interface StatusReasonStat {
