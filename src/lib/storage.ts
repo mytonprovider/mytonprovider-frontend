@@ -1,34 +1,12 @@
+import { readLocal } from "@myton/ui"
+
 export const THEME_KEY = "mtp_theme"
 export const LANGUAGE_KEY = "mtp_lang"
 export const FAVORITES_KEY = "mtp_favorites"
 export const LIST_KEY = "mtp_list"
 
-export const readStored = (key: string): string | null => {
-  try {
-    return localStorage.getItem(key)
-  } catch {
-    return null
-  }
-}
-
-export const writeStored = (key: string, value: string): void => {
-  try {
-    localStorage.setItem(key, value)
-  } catch {
-    return
-  }
-}
-
-export const removeStored = (key: string): void => {
-  try {
-    localStorage.removeItem(key)
-  } catch {
-    return
-  }
-}
-
 export const readStoredStrings = (key: string): string[] => {
-  const stored = readStored(key)
+  const stored = readLocal(key)
   if (!stored) return []
 
   try {

@@ -1,14 +1,36 @@
 import { createHash } from "node:crypto"
 import { readFileSync } from "node:fs"
+import { createRequire } from "node:module"
 import react from "@vitejs/plugin-react-swc"
-import { defineConfig, loadEnv } from "vite"
+import { defineConfig, loadEnv, searchForWorkspaceRoot } from "vite"
 import tsconfigPaths from "vite-tsconfig-paths"
 
+const uiSrc = process.env.UI_SRC
+
+const tokensFile = uiSrc
+  ? `${uiSrc}/src/styles/tokens.css`
+  : createRequire(import.meta.url).resolve("@myton/ui/tokens.css")
+
+const blockOf = (tokens: string, selector: string): string => {
+  const start = tokens.indexOf(selector)
+  return start < 0 ? "" : tokens.slice(start, tokens.indexOf("}", start))
+}
+
+const tokenIn = (block: string, name: string): string | undefined =>
+  new RegExp(`(?<![\\w-])--${name}:\\s*([^;]+);`).exec(block)?.[1].trim()
+
 const backgroundOf = (selector: string): string => {
-  const tokens = readFileSync("src/styles/tokens.css", "utf8")
-  const found = /--bg:\s*(#[0-9a-f]{3,8})/i.exec(tokens.slice(tokens.indexOf(selector)))
-  if (!found) throw new Error(`no --bg under ${selector}`)
-  return found[1]
+  const tokens = readFileSync(tokensFile, "utf8")
+  const own = blockOf(tokens, selector)
+  const root = blockOf(tokens, ":root {")
+  const resolve = (value: string, seen: Set<string>): string => {
+    const ref = /^var\(--([\w-]+)\)$/.exec(value)
+    if (!ref || seen.has(ref[1])) return value
+    return resolve(tokenIn(own, ref[1]) ?? tokenIn(root, ref[1]) ?? "", seen.add(ref[1]))
+  }
+  const found = resolve("var(--bg)", new Set())
+  if (!/^#[0-9a-f]{3,8}$/i.test(found)) throw new Error(`no hex --bg under ${selector}`)
+  return found
 }
 
 export default defineConfig(({ mode }) => {
@@ -17,6 +39,22 @@ export default defineConfig(({ mode }) => {
   let base = "/"
 
   return {
+    resolve: {
+      alias: uiSrc
+        ? [
+            { find: /^@myton\/ui$/, replacement: `${uiSrc}/src/index.ts` },
+            { find: /^@myton\/ui\/domain$/, replacement: `${uiSrc}/src/domain/index.ts` },
+            { find: /^@myton\/ui\/locale$/, replacement: `${uiSrc}/src/locale/index.ts` },
+            { find: /^@myton\/ui\/styles\.css$/, replacement: `${uiSrc}/src/styles/index.css` },
+            { find: /^@myton\/ui\/site\.css$/, replacement: `${uiSrc}/src/styles/site.css` },
+            { find: /^@myton\/ui\/fonts\.css$/, replacement: `${uiSrc}/src/styles/fonts.css` },
+            { find: /^@myton\/ui\/i18n$/, replacement: `${uiSrc}/src/i18n/index.ts` },
+            { find: /^@myton\/ui\/text\.module\.css$/, replacement: `${uiSrc}/src/styles/text.module.css` },
+            { find: /^@myton\/ui\/motion\.module\.css$/, replacement: `${uiSrc}/src/styles/motion.module.css` },
+          ]
+        : [],
+      dedupe: ["react", "react-dom", "i18next", "react-i18next"],
+    },
     plugins: [
       react(),
       tsconfigPaths(),
@@ -60,6 +98,7 @@ export default defineConfig(({ mode }) => {
     },
     server: {
       host: true,
+      fs: { allow: [searchForWorkspaceRoot(process.cwd()), ...(uiSrc ? [uiSrc] : [])] },
     },
   }
 })

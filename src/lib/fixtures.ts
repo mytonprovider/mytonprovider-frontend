@@ -1,11 +1,10 @@
-import type { ApiProvider, Provider } from "@/types/provider"
-import { toProvider } from "./api"
-import type { Translate } from "./format"
+import { toProvider, type CatalogProviderDto, type Provider } from "@myton/ui/domain"
+import type { Translate } from "@/types/model"
 
 export const translate: Translate = (key, options) =>
   options && "count" in options ? `${String(options.count)}${key.slice(key.indexOf(".") + 1)}` : key
 
-const base: ApiProvider = {
+const base = {
   pubkey: "3a65231e59031a3a0c6f363030712730b11562a3c77556184c05d58adeb6b466",
   address: "EQAjRhPNqC9mY2muFNsYwYI5eqb-lsq-sD5xk3SLfrDljMwB",
   status: 0,
@@ -46,12 +45,18 @@ const base: ApiProvider = {
   ],
 }
 
-const withPubkey = (provider: ApiProvider, suffix: string): Provider =>
-  toProvider({ ...provider, pubkey: provider.pubkey.slice(0, 58) + suffix })
+export const parsed = (dto: CatalogProviderDto): Provider => {
+  const provider = toProvider(dto)
+  if (provider === null) throw new Error("fixture without a key")
+  return provider
+}
+
+const withPubkey = (provider: CatalogProviderDto & { pubkey: string }, suffix: string): Provider =>
+  parsed({ ...provider, pubkey: provider.pubkey.slice(0, 58) + suffix })
 
 export const apiStable = base
 
-export const stable = toProvider(base)
+export const stable = parsed(base)
 
 export const overfilled = withPubkey(
   {

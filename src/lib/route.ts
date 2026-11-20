@@ -1,13 +1,9 @@
 import { useCallback, useEffect, useState } from "react"
-
-const PUBKEY = /^[0-9a-f]{64}$/i
+import { pubkeyFrom } from "@myton/ui/domain"
 
 const OPENED = "provider"
 
-export const pubkeyOf = (hash: string): string | null => {
-  const candidate = hash.replace(/^#/, "")
-  return PUBKEY.test(candidate) ? candidate.toLowerCase() : null
-}
+export const pubkeyOf = (hash: string): string | null => pubkeyFrom(hash.replace(/^#/, ""))
 
 export const providerUrl = (pubkey: string): string =>
   `${window.location.origin}${import.meta.env.BASE_URL}#${pubkey}`

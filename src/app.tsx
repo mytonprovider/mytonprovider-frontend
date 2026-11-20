@@ -1,126 +1,82 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
-import { ArrowUp, Search, X } from "lucide-react"
+import { useCallback, useDeferredValue, useEffect, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
-import type { FiltersData } from "@/types/filters"
+import { Star } from "lucide-react"
+import {
+  Button,
+  cx,
+  EmptyState,
+  FavoriteButton,
+  FilterPanel,
+  Globe,
+  LoadError,
+  ProviderIcon,
+  removeLocal,
+  SearchField,
+  shareLink,
+  ShareButton,
+  Sheet,
+  SheetFooter,
+  ShortId,
+  ShowMore,
+  SectionTabs,
+  SitePage,
+  TabPanel,
+  UiProvider,
+  useCopyFeedback,
+  writeLocal,
+} from "@myton/ui"
+import { START_FILTERS, countChanged, isStart, type FilterValues } from "@myton/ui/domain"
+import { pickLang } from "@myton/ui/i18n"
+import { globeWords, locales } from "@myton/ui/locale"
 import { useCatalog } from "@/lib/catalog"
-import { DEFAULT_FILTERS, countActiveFilters, isPristine } from "@/lib/filters"
-import { FAVORITES_KEY, readStoredStrings, removeStored, writeStored } from "@/lib/storage"
-import { copyText, scrollToTop } from "@/lib/dom"
-import { cx } from "@/lib/cx"
+import { sampleDetail } from "@/lib/model"
+import { FAVORITES_KEY, readStoredStrings } from "@/lib/storage"
 import { providerUrl, useOpenProvider } from "@/lib/route"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
-import { Filters } from "@/components/filters"
 import { FilterButton } from "@/components/filter-button"
-import { Globe } from "@/components/globe"
-import { IconButton } from "@/components/icon-button"
-import { ProviderDetails, ProviderDetailsSkeleton } from "@/components/provider-details"
+import { ProviderDetails } from "@/components/provider-details"
 import { ProviderList } from "@/components/provider-list"
-import { Sheet } from "@/components/sheet"
 import styles from "./app.module.css"
 
-const COPIED_RESET_MS = 1200
+type ListTab = "all" | "favorites"
 
-interface LoadFailureProps {
-  status: number | null
-  compact: boolean
-  onRetry: () => void
-}
-
-const LoadFailure = ({ status, compact, onRetry }: LoadFailureProps) => {
-  const { t } = useTranslation()
-
-  return (
-    <div className={styles.state} role="status" data-compact={compact}>
-      <p>{t("errors.failedToLoadProviders")}</p>
-      {status !== null && <p className={styles.errorCode}>{t("errors.statusCode", { status })}</p>}
-      <button type="button" className={styles.linkButton} onClick={onRetry}>
-        {t("buttons.retry")}
-      </button>
-    </div>
-  )
-}
+const TABS = "list"
+const TAB_ORDER: readonly ListTab[] = ["all", "favorites"]
 
 export const App = () => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
+  const lang = pickLang(i18n.language)
+  const locale = locales[lang]
 
-  const [filters, setFilters] = useState<FiltersData>(DEFAULT_FILTERS)
-  const [draft, setDraft] = useState<FiltersData>(DEFAULT_FILTERS)
+  const [filters, setFilters] = useState<FilterValues>(START_FILTERS)
+  const [draft, setDraft] = useState<FilterValues>(START_FILTERS)
   const [favorites, setFavorites] = useState<string[]>(() => readStoredStrings(FAVORITES_KEY))
 
   const [filtersOpen, setFiltersOpen] = useState(false)
+  const [tab, setTab] = useState<ListTab>("all")
   const [detailKey, openProvider] = useOpenProvider()
   const [viewedKey, setViewedKey] = useState<string | null>(detailKey)
-  const [copiedKey, setCopiedKey] = useState<string | null>(null)
-  const [scrolledDown, setScrolledDown] = useState(false)
-  const [footerVisible, setFooterVisible] = useState(false)
-
-  const copyTimer = useRef<number>(0)
-  const searchRef = useRef<HTMLInputElement>(null)
-  const footerRef = useRef<HTMLElement>(null)
 
   const catalog = useCatalog(filters, favorites)
+  // The tabs move at once; the list, the globe and the panel follow a step later, so building a section's rows never
+  // holds the thumb back
+  const shownTab = useDeferredValue(tab)
+  const onFavorites = shownTab === "favorites"
+  const shownTotal = onFavorites ? catalog.favoriteRows.length : catalog.total
+  const noFavorites = onFavorites && favorites.length === 0
 
   useEffect(() => {
-    const onScroll = () => setScrolledDown(window.scrollY > 320)
-    onScroll()
-    window.addEventListener("scroll", onScroll, { passive: true })
-    return () => window.removeEventListener("scroll", onScroll)
-  }, [])
-
-  useEffect(() => {
-    const footer = footerRef.current
-    if (!footer) return
-
-    const observer = new IntersectionObserver(([entry]) => setFooterVisible(entry?.isIntersecting ?? false))
-    observer.observe(footer)
-    return () => observer.disconnect()
-  }, [])
-
-  const anySheetOpen = filtersOpen || detailKey !== null
-
-  useLayoutEffect(() => {
-    if (!anySheetOpen) return
-    const root = document.documentElement
-    const width = root.clientWidth
-    root.style.overflow = "hidden"
-    const grown = root.clientWidth - width
-    if (grown > 0) root.style.paddingRight = `${grown}px`
-    return () => {
-      root.style.overflow = ""
-      root.style.paddingRight = ""
-    }
-  }, [anySheetOpen])
-
-  useEffect(() => {
-    if (favorites.length === 0) removeStored(FAVORITES_KEY)
-    else writeStored(FAVORITES_KEY, JSON.stringify(favorites))
+    if (favorites.length === 0) removeLocal(FAVORITES_KEY)
+    else writeLocal(FAVORITES_KEY, JSON.stringify(favorites))
   }, [favorites])
 
-  useEffect(() => () => window.clearTimeout(copyTimer.current), [])
+  const { copied: copiedKey, copy: copyValue } = useCopyFeedback()
+  const copy = useCallback((value: string) => void copyValue(value), [copyValue])
+  const share = useCallback((pubkey: string) => shareLink(providerUrl(pubkey), copy), [copy])
 
-  const copy = useCallback((value: string) => {
-    void copyText(value).then((done) => {
-      if (!done) return
-      setCopiedKey(value)
-      window.clearTimeout(copyTimer.current)
-      copyTimer.current = window.setTimeout(() => setCopiedKey(null), COPIED_RESET_MS)
-    })
-  }, [])
-
-  const share = useCallback(
-    (pubkey: string) => {
-      const url = providerUrl(pubkey)
-
-      if (typeof navigator.share === "function") {
-        void navigator.share({ url }).catch(() => undefined)
-        return
-      }
-
-      copy(url)
-    },
-    [copy],
-  )
+  const { copied: sheetCopiedKey, copy: copySheetValue } = useCopyFeedback()
+  const copyFromSheet = useCallback((value: string) => void copySheetValue(value), [copySheetValue])
 
   const toggleFavorite = useCallback((pubkey: string) => {
     setFavorites((current) =>
@@ -128,11 +84,11 @@ export const App = () => {
     )
   }, [])
 
-  const matching = filtersOpen ? catalog.countFor(draft) : catalog.total
+  const matchCount = filtersOpen ? catalog.countFor(draft) : catalog.total
 
-  const filtersTouched = !isPristine(filters)
-  const draftTouched = !isPristine(draft)
-  const draftFilters = countActiveFilters(draft)
+  const filtersTouched = !isStart(filters)
+  const draftTouched = !isStart(draft)
+  const draftFilters = countChanged(draft)
 
   if (detailKey !== null && detailKey !== viewedKey) setViewedKey(detailKey)
 
@@ -147,8 +103,8 @@ export const App = () => {
   }, [detailKey, detail, catalog.loading, catalog.failure, openProvider])
 
   const resetFilters = () => {
-    setFilters(DEFAULT_FILTERS)
-    setDraft(DEFAULT_FILTERS)
+    setFilters(START_FILTERS)
+    setDraft(START_FILTERS)
   }
 
   const openFilters = () => {
@@ -157,172 +113,196 @@ export const App = () => {
   }
 
   return (
-    <div className={styles.shell}>
-      <Header />
-      <main id="top" tabIndex={-1} className={styles.main}>
-        <div className={styles.hero}>
-          <h1 className={styles.title}>{t("mainTitle")}</h1>
-          <p className={styles.subtitle}>{t("mainDescription")}</p>
-        </div>
+    <UiProvider labels={locale.ui}>
+      <SitePage header={<Header />} footer={<Footer />} title={t("mainTitle")} subtitle={t("mainDescription")}>
+        <SectionTabs
+          tabs={TABS}
+          items={[
+            { key: "all", label: t("tabs.providers"), icon: ProviderIcon },
+            {
+              key: "favorites",
+              label: t("tabs.favorites"),
+              icon: Star,
+              badge: favorites.length > 0 ? String(favorites.length) : undefined,
+            },
+          ]}
+          value={tab}
+          onChange={setTab}
+        />
 
-        <Globe providers={catalog.matching} ready={!catalog.loading} />
+        <Globe
+          providers={onFavorites ? catalog.favoriteProviders : catalog.matching}
+          ready={!catalog.loading}
+          words={globeWords[lang]}
+        />
 
-        <div className={styles.searchRow}>
-          <div className={styles.search}>
-            <Search className={styles.searchIcon} aria-hidden="true" />
-            <input
-              ref={searchRef}
-              className={styles.searchInput}
-              type="text"
+        <div className={styles.catalog}>
+          <div className={styles.searchRow}>
+            <SearchField
+              className={styles.search}
               name="search"
-              autoComplete="off"
               value={catalog.query}
-              placeholder={t("ui.search")}
-              aria-label={t("ui.search")}
-              onChange={(event) => catalog.setQuery(event.target.value)}
+              label={t("ui.search")}
+              onChange={catalog.setQuery}
             />
-            {catalog.query && (
-              <IconButton
-                className={styles.clear}
-                label={t("ui.clear")}
-                onClick={() => {
-                  catalog.setQuery("")
-                  searchRef.current?.focus()
-                }}
-              >
-                <X className={styles.clearIcon} aria-hidden="true" />
-              </IconButton>
+
+            <span className={styles.filterSlot}>
+              <FilterButton variant="icon" active={filtersTouched} onClick={openFilters} />
+            </span>
+          </div>
+
+          <TabPanel tabs={TABS} value={shownTab} order={TAB_ORDER}>
+            {catalog.failure && (
+              <LoadError
+                message={t("errors.failedToLoadProviders")}
+                status={catalog.failure.status}
+                onRetry={catalog.retry}
+                className={cx(styles.state, catalog.total > 0 && styles.compact)}
+              />
             )}
-          </div>
 
-          <span className={styles.filterSlot}>
-            <FilterButton variant="icon" active={filtersTouched} onClick={openFilters} />
-          </span>
-        </div>
+            {noFavorites && !catalog.failure && (
+              <EmptyState
+                role="status"
+                title={t("tabs.noFavorites")}
+                hint={t("tabs.noFavoritesHint")}
+                className={styles.state}
+              />
+            )}
 
-        {catalog.failure && (
-          <LoadFailure status={catalog.failure.status} compact={catalog.total > 0} onRetry={catalog.retry} />
-        )}
+            {!catalog.loading && !catalog.failure && shownTotal === 0 && !noFavorites && (
+              <EmptyState
+                role="status"
+                title={t("table.providersNotFound")}
+                action={
+                  <Button
+                    variant="text"
+                    tone="red"
+                    onClick={() => {
+                      catalog.setQuery("")
+                      resetFilters()
+                    }}
+                  >
+                    {t("ui:ui.reset")}
+                  </Button>
+                }
+                className={styles.state}
+              />
+            )}
 
-        {!catalog.loading && !catalog.failure && catalog.total === 0 && (
-          <div className={styles.state} role="status">
-            <p>{t("table.providersNotFound")}</p>
-            <button
-              type="button"
-              className={styles.linkButton}
-              onClick={() => {
-                catalog.setQuery("")
-                resetFilters()
-              }}
-            >
-              {t("buttons.reset")}
-            </button>
-          </div>
-        )}
+            {((catalog.showSkeleton && !noFavorites) || shownTotal > 0) && (
+              <div className={styles.results}>
+                <ProviderList
+                  rows={onFavorites ? catalog.favoriteRows : catalog.rows}
+                  favorites={favorites}
+                  copiedKey={copiedKey}
+                  sortField={catalog.sortField}
+                  sortDirection={catalog.sortDirection}
+                  filtersActive={filtersTouched}
+                  loading={catalog.showSkeleton}
+                  skeletonRows={onFavorites ? favorites.length : catalog.placeholder.shown}
+                  onSort={catalog.toggleSort}
+                  onToggleFavorite={toggleFavorite}
+                  onCopy={copy}
+                  onShare={share}
+                  onOpen={openProvider}
+                  viewedKey={viewedKey}
+                  onOpenFilters={openFilters}
+                />
 
-        {(catalog.showSkeleton || catalog.total > 0) && (
-          <div className={styles.results}>
-            <ProviderList
-              rows={catalog.rows}
-              pinned={catalog.pinned}
-              favorites={favorites}
-              copiedKey={copiedKey}
-              sortField={catalog.sortField}
-              sortDirection={catalog.sortDirection}
-              filtersActive={filtersTouched}
-              loading={catalog.showSkeleton}
-              skeletonRows={catalog.placeholder.shown}
-              pinnedSkeletonRows={favorites.length}
-              onSort={catalog.toggleSort}
-              onToggleFavorite={toggleFavorite}
-              onCopy={copy}
-              onShare={share}
-              onOpen={openProvider}
-              viewedKey={viewedKey}
-              onOpenFilters={openFilters}
-            />
-
-            {catalog.showSkeleton ? (
-              catalog.placeholder.total > 0 && (
-                <div className={styles.more} aria-hidden="true">
-                  <span className={cx(styles.showing, styles.shape, styles.shapeText)}>
-                    {t("ui.showing", { shown: catalog.placeholder.shown, total: catalog.placeholder.total })}
-                  </span>
-                  {catalog.placeholder.shown < catalog.placeholder.total && (
-                    <span className={cx(styles.moreButton, styles.shape, styles.shapeText)}>{t("buttons.loadMore")}</span>
-                  )}
-                </div>
-              )
-            ) : (
-              <div className={styles.more}>
-                <span className={styles.showing} role="status">
-                  {t("ui.showing", { shown: catalog.rows.length, total: catalog.total })}
-                </span>
-                {catalog.rows.length < catalog.total && (
-                  <button type="button" className={styles.moreButton} onClick={catalog.loadMore}>
-                    {t("buttons.loadMore")}
-                  </button>
+                {onFavorites ? null : catalog.showSkeleton ? (
+                  catalog.placeholder.total > 0 && (
+                    <ShowMore
+                      loading
+                      shown={catalog.placeholder.shown}
+                      total={catalog.placeholder.total}
+                      onMore={catalog.loadMore}
+                    />
+                  )
+                ) : (
+                  <ShowMore shown={catalog.rows.length} total={catalog.total} onMore={catalog.loadMore} />
                 )}
               </div>
             )}
-          </div>
-        )}
-
-        {scrolledDown && !footerVisible && (
-          <button
-            type="button"
-            className={styles.fab}
-            title={t("buttons.goUp")}
-            aria-label={t("buttons.goUp")}
-            onClick={() => {
-              scrollToTop()
-              document.getElementById("top")?.focus()
-            }}
-          >
-            <ArrowUp className={styles.fabIcon} aria-hidden="true" />
-          </button>
-        )}
+          </TabPanel>
+        </div>
 
         <Sheet
           open={filtersOpen}
-          label={t("filters.title")}
+          title={t("ui:filters.title")}
           badge={draftFilters}
-          onReset={draftTouched ? resetFilters : undefined}
+          actions={
+            draftTouched ? (
+              <Button variant="text" tone="red" onClick={resetFilters}>
+                {t("ui:ui.reset")}
+              </Button>
+            ) : undefined
+          }
           onClose={closeFilters}
-          footer={
-            <button
-              type="button"
-              className={styles.apply}
+        >
+          {filtersOpen && (
+            <FilterPanel
+              values={draft}
+              edges={catalog.edges}
+              options={catalog.options}
+              labels={locale.filters}
+              onChange={setDraft}
+            />
+          )}
+          <SheetFooter>
+            <Button
+              variant="primary"
+              size="xl"
               onClick={() => {
                 setFilters(draft)
+                catalog.setQuery("")
                 closeFilters()
               }}
             >
-              {catalog.showSkeleton ? t("buttons.applyFilters") : t("buttons.showMatching", { total: matching })}
-            </button>
-          }
-        >
-          {filtersOpen && (
-            <Filters value={draft} bounds={catalog.bounds} options={catalog.options} onChange={setDraft} />
-          )}
+              {catalog.showSkeleton ? t("buttons.applyFilters") : t("ui:filters.show", { total: matchCount })}
+            </Button>
+          </SheetFooter>
         </Sheet>
 
         <Sheet
           open={detailKey !== null}
-          label={t("provider.providerTitle")}
+          title={t("ui:filters.group.provider")}
+          lead={detailKey !== null && <ShortId value={detailKey} />}
+          actions={
+            detailKey !== null && (
+              <>
+                <FavoriteButton
+                  size="sm"
+                  active={favorites.includes(detailKey)}
+                  label={t("ui.favorites")}
+                  onToggle={() => toggleFavorite(detailKey)}
+                />
+                <ShareButton
+                  size="sm"
+                  label={t("ui.share")}
+                  shared={sheetCopiedKey === providerUrl(detailKey)}
+                  onShare={() => shareLink(providerUrl(detailKey), copyFromSheet)}
+                />
+              </>
+            )
+          }
           onClose={closeDetail}
         >
           {detailKey !== null &&
             (detail ? (
-              <ProviderDetails key={detailKey} detail={detail} copiedKey={copiedKey} onCopy={copy} />
+              <ProviderDetails key={detailKey} detail={detail} />
             ) : catalog.failure ? (
-              <LoadFailure status={catalog.failure.status} compact={false} onRetry={catalog.retry} />
+              <LoadError
+                message={t("errors.failedToLoadProviders")}
+                status={catalog.failure.status}
+                onRetry={catalog.retry}
+                className={styles.state}
+              />
             ) : (
-              <ProviderDetailsSkeleton />
+              <ProviderDetails detail={sampleDetail(Date.now() / 1000, t, lang)} loading />
             ))}
         </Sheet>
-      </main>
-      <Footer ref={footerRef} />
-    </div>
+      </SitePage>
+    </UiProvider>
   )
 }

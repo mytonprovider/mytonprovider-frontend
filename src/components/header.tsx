@@ -1,46 +1,22 @@
-import { Moon, Sun } from "lucide-react"
 import { useTranslation } from "react-i18next"
-import { useTheme } from "@/lib/theme"
-import { scrollToTop } from "@/lib/dom"
+import { SiteHeader, useSiteTheme } from "@myton/ui"
+import { pickLang } from "@myton/ui/i18n"
+import { chooseLanguage } from "@/i18n"
+import { THEME_KEY } from "@/lib/storage"
 import logo from "./logo.svg"
-import { IconButton } from "./icon-button"
-import styles from "./header.module.css"
 
 export const Header = () => {
   const { t, i18n } = useTranslation()
-  const { dark, toggle } = useTheme()
+  const { dark, toggle } = useSiteTheme(THEME_KEY)
 
   return (
-    <header className={styles.header}>
-      <div className={styles.inner}>
-        <a
-          href="#top"
-          className={styles.brand}
-          aria-label={t("siteTitle")}
-          onClick={(event) => {
-            event.preventDefault()
-            scrollToTop()
-          }}
-        >
-          <img className={styles.logo} src={logo} alt="" width={36} height={36} />
-          <span className={styles.title}>{t("siteTitle")}</span>
-        </a>
-
-        <span className={styles.spacer} />
-
-        <IconButton
-          size="lg"
-          label={t("ui.language")}
-          className={styles.language}
-          onClick={() => void i18n.changeLanguage(i18n.language === "en" ? "ru" : "en")}
-        >
-          {i18n.language === "en" ? "RU" : "EN"}
-        </IconButton>
-
-        <IconButton size="lg" label={t("ui.theme")} onClick={toggle}>
-          {dark ? <Sun className={styles.icon} aria-hidden="true" /> : <Moon className={styles.icon} aria-hidden="true" />}
-        </IconButton>
-      </div>
-    </header>
+    <SiteHeader
+      title={t("siteTitle")}
+      logo={logo}
+      language={pickLang(i18n.language)}
+      onLanguage={chooseLanguage}
+      dark={dark}
+      onToggleTheme={toggle}
+    />
   )
 }

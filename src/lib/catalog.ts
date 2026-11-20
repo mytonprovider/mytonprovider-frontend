@@ -1,15 +1,27 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
-import type { FiltersData } from "@/types/filters"
-import type { Provider } from "@/types/provider"
+import { readLocal, writeLocal } from "@myton/ui"
+import {
+  CATALOG_FRESH_MS,
+  filterEdges,
+  filterOptions,
+  isStart,
+  matchesFilters,
+  nextSortDirection,
+  PAGE_SIZE,
+  rankByRating,
+  sortProviders,
+  type FilterEdges,
+  type FilterValues,
+  type ListId,
+  type ListOption,
+  type Provider,
+} from "@myton/ui/domain"
+import { pickLang } from "@myton/ui/i18n"
 import type { ProviderDetail, SortDirection, SortField } from "@/types/model"
 import { ApiError, fetchProviders } from "./api"
-import { matchesQuery, sortProviders, toDetail, toRow } from "./model"
-import { deriveBounds, isPristine, matches, optionsFor, type FilterBounds, type FilterOptions } from "./filters"
-import { LIST_KEY, readStored, writeStored } from "./storage"
-
-export const PAGE_SIZE = 20
-const FRESH_FOR_MS = 120_000
+import { matchesQuery, toDetail, toRow } from "./model"
+import { LIST_KEY } from "./storage"
 
 interface ListShape {
   shown: number
@@ -21,7 +33,7 @@ const COLD_LIST: ListShape = { shown: PAGE_SIZE, total: 0 }
 const isCount = (value: unknown): value is number => typeof value === "number" && Number.isInteger(value) && value >= 0
 
 const storedList = (): ListShape => {
-  const stored = readStored(LIST_KEY)
+  const stored = readLocal(LIST_KEY)
   if (!stored) return COLD_LIST
 
   try {
@@ -37,33 +49,30 @@ const pageFor = (shown: number): number => Math.max(PAGE_SIZE, Math.ceil(shown /
 
 interface Snapshot {
   providers: Provider[]
-  bounds: FilterBounds
-  options: FilterOptions
+  edges: FilterEdges
+  options: Record<ListId, ListOption[]>
   fetchedAt: number
-}
-
-export const NOTHING_LOADED: Snapshot = {
-  providers: [],
-  bounds: {},
-  options: {},
-  fetchedAt: 0,
 }
 
 export const nextSnapshot = (providers: Provider[], now: number): Snapshot => ({
   providers,
-  bounds: deriveBounds(providers, now),
-  options: optionsFor(providers),
+  edges: filterEdges(providers, now),
+  options: filterOptions(providers),
   fetchedAt: now,
 })
 
-const shows = (provider: Provider, filters: FiltersData, query: string, now: number): boolean =>
-  matches(provider, filters, now) && matchesQuery(provider, query)
+export const NOTHING_LOADED: Snapshot = nextSnapshot([], 0)
 
-export const countMatching = (providers: Provider[], filters: FiltersData, query: string, now: number): number =>
-  providers.filter((provider) => shows(provider, filters, query, now)).length
+// The search reaches past the filters: the provider looked for is often the one they hide
+const shows = (provider: Provider, filters: FilterValues, query: string, now: number): boolean =>
+  query.trim() === "" ? matchesFilters(provider, filters, now) : matchesQuery(provider, query)
 
-export const useCatalog = (filters: FiltersData, favorites: string[]) => {
-  const { t } = useTranslation()
+export const countMatching = (providers: Provider[], filters: FilterValues, now: number): number =>
+  providers.filter((provider) => matchesFilters(provider, filters, now)).length
+
+export const useCatalog = (filters: FilterValues, favorites: string[]) => {
+  const { t, i18n } = useTranslation()
+  const lang = pickLang(i18n.language)
 
   const [snapshot, setSnapshot] = useState<Snapshot>(NOTHING_LOADED)
   const [loading, setLoading] = useState(true)
@@ -104,7 +113,7 @@ export const useCatalog = (filters: FiltersData, favorites: string[]) => {
   useEffect(() => {
     const onVisible = () => {
       if (document.visibilityState !== "visible") return
-      if (Date.now() - loadedAt.current < FRESH_FOR_MS) return
+      if (Date.now() - loadedAt.current < CATALOG_FRESH_MS) return
       setReloadToken((current) => current + 1)
     }
 
@@ -117,52 +126,62 @@ export const useCatalog = (filters: FiltersData, favorites: string[]) => {
     return sortProviders(found, sortField, sortDirection)
   }, [snapshot.providers, snapshot.fetchedAt, filters, query, sortField, sortDirection])
 
-  const rows = useMemo(() => sorted.slice(0, limit).map((provider) => toRow(provider, t)), [sorted, limit, t])
+  // The place among what the filters keep, not the search: a key found by search keeps the number its row has
+  const ranks = useMemo(
+    () => rankByRating(snapshot.providers.filter((provider) => matchesFilters(provider, filters, snapshot.fetchedAt))),
+    [snapshot.providers, snapshot.fetchedAt, filters],
+  )
 
-  const asOnLoad = isPristine(filters) && query.trim() === ""
+  const rows = useMemo(
+    () => sorted.slice(0, limit).map((provider) => toRow(provider, lang, ranks)),
+    [sorted, limit, lang, ranks],
+  )
+
+  const asOnLoad = isStart(filters) && query.trim() === ""
 
   useEffect(() => {
     if (snapshot.providers.length === 0 || !asOnLoad) return
-    writeStored(LIST_KEY, JSON.stringify({ shown: rows.length, total: sorted.length }))
+    writeLocal(LIST_KEY, JSON.stringify({ shown: rows.length, total: sorted.length }))
   }, [snapshot.providers.length, rows.length, sorted.length, asOnLoad])
 
-  const pinned = useMemo(
-    () => sorted.filter((provider) => favorites.includes(provider.pubkey)).map((provider) => toRow(provider, t)),
-    [sorted, favorites, t],
+  const favoriteProviders = useMemo(
+    () => sorted.filter((provider) => favorites.includes(provider.pubkey)),
+    [sorted, favorites],
+  )
+  const favoriteRows = useMemo(
+    () => favoriteProviders.map((provider) => toRow(provider, lang, ranks)),
+    [favoriteProviders, lang, ranks],
   )
 
   const detailFor = useCallback(
     (pubkey: string): ProviderDetail | null => {
       const provider = snapshot.providers.find((item) => item.pubkey === pubkey)
-      return provider ? toDetail(provider, snapshot.fetchedAt, t) : null
+      return provider ? toDetail(provider, snapshot.fetchedAt, t, lang) : null
     },
-    [snapshot.providers, snapshot.fetchedAt, t],
+    [snapshot.providers, snapshot.fetchedAt, t, lang],
   )
 
   const countFor = useCallback(
-    (draft: FiltersData) => countMatching(snapshot.providers, draft, query, snapshot.fetchedAt),
-    [snapshot.providers, snapshot.fetchedAt, query],
+    (draft: FilterValues) => countMatching(snapshot.providers, draft, snapshot.fetchedAt),
+    [snapshot.providers, snapshot.fetchedAt],
   )
 
   const toggleSort = (field: SortField) => {
-    if (field !== sortField) {
-      setSortField(field)
-      setSortDirection("desc")
-      return
-    }
-    setSortDirection((current) => (current === "asc" ? "desc" : "asc"))
+    setSortDirection(nextSortDirection(field, sortField, sortDirection))
+    setSortField(field)
   }
 
   return {
     rows,
     matching: sorted,
-    pinned,
+    favoriteProviders,
+    favoriteRows,
     placeholder,
     total: sorted.length,
     loading,
     showSkeleton: loading && snapshot.providers.length === 0,
     failure,
-    bounds: snapshot.bounds,
+    edges: snapshot.edges,
     options: snapshot.options,
     query,
     setQuery,

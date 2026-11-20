@@ -1,15 +1,37 @@
-import { useEffect, useRef, type ReactNode } from "react"
-import { ArrowDown, ArrowUp, Check, ChevronDown, CircleHelp, Share2, Star } from "lucide-react"
+import { useEffect, useRef, useState, type ReactNode } from "react"
+import { ArrowDown, ArrowUp, Star } from "lucide-react"
 import { useTranslation } from "react-i18next"
+import {
+  Badge,
+  Button,
+  CopyButton,
+  cx,
+  DataRow,
+  DataTable,
+  DataTableHead,
+  DataTableRows,
+  FavoriteButton,
+  FreeMark,
+  GhostGlyph,
+  GhostIcon,
+  GhostValue,
+  ShareButton,
+  RankMark,
+  Sheet,
+  SheetFooter,
+  ShortId,
+  skeletonClass,
+  SortColumn,
+  SortList,
+  useCompactStatus,
+} from "@myton/ui"
+import { fmt, GRAM, PAGE_SIZE, PROVIDER_SAMPLE, STATE_TONE } from "@myton/ui/domain"
+import { pickLang } from "@myton/ui/i18n"
+import { words } from "@myton/ui/locale"
+import { providerUrl } from "@/lib/route"
 import type { ProviderRow, SortDirection, SortField } from "@/types/model"
-import { CopyButton } from "./copy-button"
-import { IconButton } from "./icon-button"
 import { FilterButton } from "./filter-button"
 import styles from "./provider-list.module.css"
-import { cx } from "@/lib/cx"
-import { PAGE_SIZE } from "@/lib/catalog"
-import { STATUS_KEYS } from "@/lib/model"
-import { providerUrl } from "@/lib/route"
 
 type StatId = Exclude<SortField, "pubkey" | "status">
 
@@ -19,21 +41,33 @@ interface Column {
   hint?: string
 }
 
+const TABLE_COLUMNS = [
+  "var(--control-md)",
+  "auto",
+  "auto",
+  "minmax(4.4em, auto)",
+  "auto",
+  "minmax(3.8em, auto)",
+  "minmax(5.2em, auto)",
+  "minmax(5.4em, auto)",
+  "minmax(6em, auto)",
+  "minmax(8em, auto)",
+  "var(--control-md)",
+].join(" ")
+
 const COLUMNS: Column[] = [
-  { id: "pubkey", label: "table.publicKey" },
-  { id: "rating", label: "table.rating" },
-  { id: "status", label: "table.status", hint: "status.accessibleFilesHint" },
-  { id: "uptime", label: "table.uptime", hint: "status.uptimeHint" },
-  { id: "price", label: "table.price", hint: "status.priceHint" },
-  { id: "freeSpace", label: "table.freeSpace" },
-  { id: "workingTime", label: "table.workingTime" },
-  { id: "location", label: "table.location" },
+  { id: "pubkey", label: "ui:columns.pubkey" },
+  { id: "rating", label: "ui:columns.rating" },
+  { id: "status", label: "ui:columns.status", hint: "status.accessibleFilesHint" },
+  { id: "uptime", label: "ui:columns.uptime", hint: "status.uptimeHint" },
+  { id: "price", label: "ui:columns.price", hint: "status.priceHint" },
+  { id: "freeSpace", label: "ui:columns.freeSpace" },
+  { id: "workingTime", label: "ui:columns.workingTime" },
+  { id: "location", label: "ui:columns.location" },
 ]
 
-const STAGGER_STEP_MS = 28
-const STAGGER_SPAN_MS = PAGE_SIZE * STAGGER_STEP_MS
-
-const staggerStep = (count: number): number => Math.min(STAGGER_STEP_MS, STAGGER_SPAN_MS / Math.max(count, 1))
+// Past a page the steps shrink, so the last row still lands within one page of steps
+const staggerScale = (count: number): number => Math.min(1, PAGE_SIZE / Math.max(count, 1))
 
 const KEY_PLACEHOLDER = "000000…000000"
 
@@ -49,17 +83,6 @@ const ORDER: Record<StatId, string> = {
 const STAT_COLUMNS = COLUMNS.filter(
   (column): column is Column & { id: StatId } => column.id !== "pubkey" && column.id !== "status",
 )
-
-const SKELETON_VALUE: Record<StatId, string> = {
-  rating: "4em",
-  uptime: "3em",
-  price: "4em",
-  freeSpace: "4.3em",
-  workingTime: "3.6em",
-  location: "5.3em",
-}
-
-const SKELETON_SPREAD = [1, 0.8, 0.95, 0.85, 0.9]
 
 const STAT_VALUES: Record<StatId, (row: ProviderRow) => ReactNode> = {
   rating: (row) => (
@@ -86,154 +109,191 @@ const STAT_VALUES: Record<StatId, (row: ProviderRow) => ReactNode> = {
 }
 
 interface CardProps {
-  onShare: (pubkey: string) => void
-  sharedUrl: boolean
   row: ProviderRow
-  delay: number
+  stagger: number
   fresh: boolean
   viewed: boolean
   favorite: boolean
   copied: boolean
+  shared: boolean
   onToggleFavorite: (pubkey: string) => void
   onCopy: (pubkey: string) => void
+  onShare: (pubkey: string) => void
   onOpen: (pubkey: string) => void
 }
 
-const shape = (...names: string[]) => cx(styles.shape, ...names)
-
 const WIDEST_RATIO = "100%"
 
-const KeyText = ({ value }: { value: string }) => {
-  const [head, tail] = value.split("…")
+const StatusCell = ({ status }: { status: ProviderRow["status"] }) => (
+  <span className={styles.statusRow}>
+    <span className={styles.statusLabel}>{status.label}</span>
+    {status.ratio && <span className={styles.ratio}>{status.ratio}</span>}
+  </span>
+)
 
-  return (
-    <>
-      <span className={styles.keyHead}>{head}</span>…<span className={styles.keyTail}>{tail}</span>
-    </>
-  )
-}
-
-const StatusCell = ({ status }: { status: ProviderRow["status"] }) => {
+// Every status word with the widest share, so the badge holds one width down the column; on a phone the share is
+// hidden
+const useStatusReserve = (): ReactNode[] => {
   const { t } = useTranslation()
-
-  return (
-    <span className={styles.statusStack}>
-      <span className={styles.statusRow}>
-        <span className={styles.statusLabel}>{status.label}</span>
-        {status.ratio && <span className={styles.ratio}>{status.ratio}</span>}
-      </span>
-      <span className={styles.statusGhost} aria-hidden="true">
-        {STATUS_KEYS.map((key) => (
-          <span key={key}>
-            {t(`status.${key}`)}
-            <span className={styles.ratio}>{WIDEST_RATIO}</span>
-          </span>
-        ))}
-      </span>
+  return Object.keys(STATE_TONE).map((key) => (
+    <span key={key} className={styles.statusRow}>
+      {t(`ui:status.${key}`)}
+      <span className={styles.ratio}>{WIDEST_RATIO}</span>
     </span>
-  )
+  ))
 }
 
 const SkeletonCard = ({ index }: { index: number }) => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
+  const reserve = useStatusReserve()
+  const time = words[pickLang(i18n.language)]
+  const space = fmt.splitSpace(PROVIDER_SAMPLE.freeBytes)
+  const rank = <RankMark rank={index + 1} className={skeletonClass()} />
+  const free = <FreeMark percent={PROVIDER_SAMPLE.freePercent} className={skeletonClass()} />
+
+  // The row's own parts with sample values hidden, so each column takes the width a loaded row gives it
+  const values: Record<StatId, ReactNode> = {
+    rating: (
+      <>
+        <GhostGlyph />
+        <GhostValue vary sample={fmt.number(PROVIDER_SAMPLE.rating, 2)} />
+      </>
+    ),
+    uptime: <GhostValue vary sample={fmt.percent(PROVIDER_SAMPLE.uptime)} />,
+    price: (
+      <>
+        <GhostValue vary sample={fmt.price(PROVIDER_SAMPLE.price)} />
+        <GhostValue sample={GRAM} className={styles.unit} />
+      </>
+    ),
+    freeSpace: (
+      <>
+        <GhostValue vary sample={space.value} />
+        <GhostValue sample={space.unit} className={styles.unit} />
+        <span className={styles.tableMark}>
+          <FreeMark percent={PROVIDER_SAMPLE.freePercent} variant="row" className={skeletonClass()} />
+        </span>
+      </>
+    ),
+    workingTime: <GhostValue vary sample={fmt.duration(PROVIDER_SAMPLE.workingTime, time.duration)} />,
+    location: <GhostValue vary sample={PROVIDER_SAMPLE.country} />,
+  }
+  const captionMarks: Partial<Record<StatId, ReactNode>> = { rating: rank, freeSpace: free }
 
   return (
-    <article
-      className={cx(styles.card, styles.placeholder)}
-      aria-hidden="true"
-      style={{ "--shape-k": SKELETON_SPREAD[index % SKELETON_SPREAD.length] } as React.CSSProperties}
-    >
+    <DataRow ghost className={styles.card}>
       <div className={styles.head}>
-        <span className={cx(styles.skeletonIcon, styles.orderFavorite)}>
-          <span className={shape(styles.shapeIcon)} />
+        <GhostIcon size="sm" className={styles.orderFavorite} />
+        <span className={cx(styles.tableRank, styles.orderRank)}>
+          <RankMark rank={index + 1} variant="row" className={skeletonClass()} />
         </span>
         <div className={cx(styles.key, styles.orderKey)}>
-          <span className={cx(styles.keyText, shape(styles.keyShape))}>
-            <KeyText value={KEY_PLACEHOLDER} />
-          </span>
-          <span className={styles.skeletonCopy}>
-            <span className={shape(styles.shapeIconSm)} />
-          </span>
+          <span className={skeletonClass(styles.keyText)}>{KEY_PLACEHOLDER}</span>
+          <GhostIcon />
         </div>
-        <span className={cx(styles.status, styles.orderStatus, shape(styles.statusShape))}>
-          <span className={styles.dot} />
-          <StatusCell status={{ tone: "green", label: t("status.stable"), ratio: WIDEST_RATIO }} />
-        </span>
+        <Badge
+          tone="gray"
+          dot
+          reserve={reserve}
+          className={skeletonClass(cx(styles.status, styles.orderStatus))}
+        >
+          <StatusCell status={{ tone: "green", label: t("ui:status.stable"), ratio: WIDEST_RATIO }} />
+        </Badge>
 
-        <span className={cx(styles.skeletonIcon, styles.orderShare)}>
-          <span className={shape(styles.shapeIcon)} />
-        </span>
+        <GhostIcon size="sm" className={styles.orderShare} />
       </div>
 
       <div className={styles.stats}>
         {STAT_COLUMNS.map((column) => (
           <div key={column.id} className={cx(styles.cell, ORDER[column.id])}>
             <span className={styles.label}>
-              <span className={shape(styles.shapeText)}>{t(column.label)}</span>
+              <span className={skeletonClass()}>{t(column.label)}</span>
+              {captionMarks[column.id]}
             </span>
-            <span className={styles.value}>
-              <span
-                className={shape(styles.shapeValue)}
-                style={{ "--shape-w": SKELETON_VALUE[column.id] } as React.CSSProperties}
-              />
-            </span>
+            <span className={styles.value}>{values[column.id]}</span>
           </div>
         ))}
       </div>
-    </article>
+    </DataRow>
   )
 }
 
-const Cell = ({ id, label, children }: { id: StatId; label: string; children: ReactNode }) => (
+// A card shows the marks in its captions; the table has its captions in the header, so the share follows the value
+// and the rank leads the row
+const Cell = ({
+  id,
+  label,
+  mark,
+  rowMark,
+  children,
+}: {
+  id: StatId
+  label: string
+  mark?: ReactNode
+  rowMark?: ReactNode
+  children: ReactNode
+}) => (
   <div className={cx(styles.cell, ORDER[id])}>
-    <span className={styles.label}>{label}</span>
-    <span className={styles.value}>{children}</span>
+    <span className={styles.label}>
+      {label}
+      {mark}
+    </span>
+    <span className={styles.value}>
+      {children}
+      {rowMark && <span className={styles.tableMark}>{rowMark}</span>}
+    </span>
   </div>
 )
 
+const CAPTION_MARKS: Partial<Record<StatId, (row: ProviderRow) => ReactNode>> = {
+  rating: (row) => row.rank !== null && <RankMark rank={row.rank} />,
+  freeSpace: (row) => row.freePercent !== null && <FreeMark percent={row.freePercent} />,
+}
+
+const ROW_MARKS: Partial<Record<StatId, (row: ProviderRow) => ReactNode>> = {
+  freeSpace: (row) => row.freePercent !== null && <FreeMark percent={row.freePercent} variant="row" />,
+}
+
 const ProviderCard = ({
   row,
-  delay,
+  stagger,
   fresh,
   viewed,
   favorite,
   copied,
-  sharedUrl,
+  shared,
   onToggleFavorite,
   onCopy,
   onShare,
   onOpen,
 }: CardProps) => {
   const { t } = useTranslation()
+  const reserve = useStatusReserve()
   const openRef = useRef<HTMLButtonElement>(null)
+  const headRef = useRef<HTMLDivElement>(null)
+  const compact = useCompactStatus(headRef)
 
   return (
-    <article
+    <DataRow
+      onOpen={() => onOpen(row.pubkey)}
+      label={`${t("table.providerDetails")} ${row.keyShort}`}
+      openRef={openRef}
+      viewed={viewed}
       className={cx(styles.card, fresh && styles.enter)}
-      data-viewed={viewed ? "" : undefined}
-      style={{ "--card-delay": `${delay}ms` } as React.CSSProperties}
+      style={{ "--card-index": stagger } as React.CSSProperties}
     >
-      <button
-        ref={openRef}
-        type="button"
-        className={styles.open}
-        aria-label={`${t("table.providerDetails")} ${row.keyShort}`}
-        onClick={() => onOpen(row.pubkey)}
-      />
-
-      <div className={styles.head}>
-        <IconButton
+      <div ref={headRef} className={styles.head}>
+        <FavoriteButton
           size="sm"
+          active={favorite}
           label={`${t("ui.favorites")} ${row.keyShort}`}
-          aria-pressed={favorite}
-          className={cx(styles.favorite, styles.orderFavorite, favorite && styles.favoriteActive)}
-          onClick={(event) => {
-            event.stopPropagation()
-            onToggleFavorite(row.pubkey)
-          }}
-        >
-          <Star className={styles.starIcon} aria-hidden="true" />
-        </IconButton>
+          className={styles.orderFavorite}
+          onToggle={() => onToggleFavorite(row.pubkey)}
+        />
+
+        <span className={cx(styles.tableRank, styles.orderRank)}>
+          {row.rank !== null && <RankMark rank={row.rank} variant="row" />}
+        </span>
 
         <div className={cx(styles.key, styles.orderKey)}>
           <button
@@ -246,47 +306,54 @@ const ProviderCard = ({
               onOpen(row.pubkey)
             }}
           >
-            <KeyText value={row.keyShort} />
+            <ShortId value={row.pubkey} />
           </button>
-          <CopyButton value={row.pubkey} copied={copied} onCopy={onCopy} label={`${t("ui.copy")} ${row.keyShort}`} />
+          <CopyButton
+            value={row.pubkey}
+            copied={copied}
+            onCopy={onCopy}
+            label={`${t("ui:ui.copy")} ${row.keyShort}`}
+          />
         </div>
 
-        <span className={cx(styles.status, styles.orderStatus)} data-tone={row.status.tone}>
-          <span className={styles.dot} aria-hidden="true" />
-          <StatusCell status={row.status} />
-        </span>
-
-        <IconButton
-          size="sm"
-          label={`${t("ui.share")} ${row.keyShort}`}
-          className={cx(styles.share, styles.orderShare)}
-          onClick={(event) => {
-            event.stopPropagation()
-            onShare(row.pubkey)
-          }}
+        <Badge
+          tone={row.status.tone}
+          dot
+          compact={compact}
+          reserve={reserve}
+          className={cx(styles.status, styles.orderStatus)}
         >
-          {sharedUrl ? (
-            <Check className={styles.shareIcon} aria-hidden="true" />
-          ) : (
-            <Share2 className={styles.shareIcon} aria-hidden="true" />
-          )}
-        </IconButton>
+          <StatusCell status={row.status} />
+        </Badge>
+
+        <ShareButton
+          size="sm"
+          shared={shared}
+          label={`${t("ui.share")} ${row.keyShort}`}
+          className={styles.orderShare}
+          onShare={() => onShare(row.pubkey)}
+        />
       </div>
 
       <div className={styles.stats}>
         {STAT_COLUMNS.map((column) => (
-          <Cell key={column.id} id={column.id} label={t(column.label)}>
+          <Cell
+            key={column.id}
+            id={column.id}
+            label={t(column.label)}
+            mark={CAPTION_MARKS[column.id]?.(row)}
+            rowMark={ROW_MARKS[column.id]?.(row)}
+          >
             {STAT_VALUES[column.id](row)}
           </Cell>
         ))}
       </div>
-    </article>
+    </DataRow>
   )
 }
 
 interface ProviderListProps {
   rows: ProviderRow[]
-  pinned: ProviderRow[]
   favorites: string[]
   copiedKey: string | null
   sortField: SortField
@@ -294,7 +361,6 @@ interface ProviderListProps {
   filtersActive: boolean
   loading: boolean
   skeletonRows: number
-  pinnedSkeletonRows: number
   onSort: (field: SortField) => void
   onToggleFavorite: (pubkey: string) => void
   onCopy: (pubkey: string) => void
@@ -306,7 +372,6 @@ interface ProviderListProps {
 
 export const ProviderList = ({
   rows,
-  pinned,
   favorites,
   copiedKey,
   sortField,
@@ -314,7 +379,6 @@ export const ProviderList = ({
   filtersActive,
   loading,
   skeletonRows,
-  pinnedSkeletonRows,
   onSort,
   onToggleFavorite,
   onCopy,
@@ -325,23 +389,25 @@ export const ProviderList = ({
 }: ProviderListProps) => {
   const { t } = useTranslation()
   const seen = useRef(new Set<string>())
+  const [sortOpen, setSortOpen] = useState(false)
+  const sortLabel = t(`ui:sortFields.${sortField}`)
 
   useEffect(() => {
-    for (const row of [...pinned, ...rows]) seen.current.add(row.pubkey)
-  }, [pinned, rows])
+    for (const row of rows) seen.current.add(row.pubkey)
+  }, [rows])
 
-  const step = staggerStep(rows.length)
+  const scale = staggerScale(rows.length)
 
   const renderCard = (row: ProviderRow, index: number) => (
     <ProviderCard
       key={row.pubkey}
       row={row}
-      delay={index * step}
+      stagger={index * scale}
       fresh={!seen.current.has(row.pubkey)}
       viewed={row.pubkey === viewedKey}
       favorite={favorites.includes(row.pubkey)}
       copied={copiedKey === row.pubkey}
-      sharedUrl={copiedKey === providerUrl(row.pubkey)}
+      shared={copiedKey === providerUrl(row.pubkey)}
       onToggleFavorite={onToggleFavorite}
       onCopy={onCopy}
       onShare={onShare}
@@ -349,103 +415,64 @@ export const ProviderList = ({
     />
   )
 
-  const pinnedCards = loading
-    ? Array.from({ length: pinnedSkeletonRows }, (_, index) => <SkeletonCard key={index} index={index} />)
-    : pinned.map(renderCard)
-
   return (
-    <div className={styles.table}>
-      {pinnedCards.length > 0 && (
-        <div className={cx(styles.list, styles.pinned)}>{pinnedCards}</div>
-      )}
-
-      <div className={styles.headerRow}>
+    <DataTable framed columns={TABLE_COLUMNS} className={styles.table}>
+      <DataTableHead className={styles.headerRow}>
         <span />
-        {COLUMNS.map((column) => {
-          const isActive = column.id === sortField
-
-          const content = (
-            <>
-              <span className={styles.headerLabel}>{t(column.label)}</span>
-              {column.hint && (
-                <span
-                  className={styles.hint}
-                  data-hint={t(column.hint)}
-                  aria-hidden="true"
-                  onClick={(event) => event.stopPropagation()}
-                >
-                  <CircleHelp className={styles.hintIcon} />
-                </span>
-              )}
-              {isActive && sortDirection === "asc" ? (
-                <ArrowUp className={styles.sortIcon} aria-hidden="true" />
-              ) : (
-                <ArrowDown className={cx(styles.sortIcon, !isActive && styles.sortIconIdle)} aria-hidden="true" />
-              )}
-            </>
-          )
-
-          const className = cx(
-            styles.headerCell,
-            styles.sortable,
-            isActive && styles.active,
-            column.id === "status" && styles.headerDotOffset,
-          )
-          const label = t(column.label)
-          const state = isActive
-            ? t(sortDirection === "asc" ? "ui.sortedAsc" : "ui.sortedDesc", { label })
-            : t("ui.sortColumn", { label })
-          const announced = column.hint ? `${state}. ${t(column.hint)}` : state
-
-          return (
-            <button
-              key={column.id}
-              type="button"
-              className={className}
-              aria-label={announced}
-              onClick={() => onSort(column.id)}
-            >
-              {content}
-            </button>
-          )
-        })}
         <span />
-      </div>
+        {COLUMNS.map((column) => (
+          <SortColumn
+            key={column.id}
+            label={t(column.label)}
+            hint={column.hint && t(column.hint)}
+            active={column.id === sortField}
+            direction={sortDirection}
+            onSort={() => onSort(column.id)}
+            className={column.id === "status" ? styles.statusHead : undefined}
+          />
+        ))}
+        <span />
+      </DataTableHead>
 
       <div className={styles.sortBar}>
-        <FilterButton variant="labeled" active={filtersActive} onClick={onOpenFilters} />
-
-        <div className={styles.sortSelect}>
-          <select
-            className={styles.select}
-            name="sort"
-            value={sortField}
-            aria-label={t("ui.sortBy")}
-            onChange={(event) => onSort(event.target.value as SortField)}
-          >
-            {COLUMNS.map((column) => (
-              <option key={column.id} value={column.id}>
-                {t(column.label)}
-              </option>
-            ))}
-          </select>
-          <ChevronDown className={styles.selectIcon} aria-hidden="true" />
-        </div>
-
-        <IconButton className={styles.direction} label={t("ui.sortDirection")} onClick={() => onSort(sortField)}>
+        <Button
+          variant="secondary"
+          aria-label={`${t("ui.sortBy")}: ${sortLabel}, ${t(`ui:sortDirection.${sortDirection}`)}`}
+          onClick={() => setSortOpen(true)}
+        >
           {sortDirection === "asc" ? (
-            <ArrowUp className={styles.directionIcon} aria-hidden="true" />
+            <ArrowUp className={styles.sortGlyph} aria-hidden="true" />
           ) : (
-            <ArrowDown className={styles.directionIcon} aria-hidden="true" />
+            <ArrowDown className={styles.sortGlyph} aria-hidden="true" />
           )}
-        </IconButton>
+          <span className={styles.sortLabel}>{sortLabel}</span>
+        </Button>
+
+        <FilterButton variant="labeled" active={filtersActive} onClick={onOpenFilters} />
       </div>
 
-      <div className={styles.list}>
+      <Sheet open={sortOpen} title={t("ui.sortBy")} onClose={() => setSortOpen(false)}>
+        <div className={styles.sortSheet}>
+          <SortList
+            options={COLUMNS.map((column) => ({ value: column.id, label: t(`ui:sortFields.${column.id}`) }))}
+            value={sortField}
+            direction={sortDirection}
+            directionLabel={t(`ui:sortDirection.${sortDirection}`)}
+            onPick={onSort}
+          />
+        </div>
+        <SheetFooter>
+          <Button variant="primary" size="xl" onClick={() => setSortOpen(false)}>
+            {t("buttons.done")}
+          </Button>
+        </SheetFooter>
+      </Sheet>
+
+      <DataTableRows className={styles.list}>
         {loading
           ? Array.from({ length: skeletonRows }, (_, index) => <SkeletonCard key={index} index={index} />)
           : rows.map(renderCard)}
-      </div>
-    </div>
+      </DataTableRows>
+    </DataTable>
   )
 }

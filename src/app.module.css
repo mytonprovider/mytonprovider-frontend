@@ -1,51 +1,6 @@
-.shell {
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-}
-
-.main {
-  flex: 1;
-  width: 100%;
-  padding: clamp(var(--space-9), 6vw, 72px) var(--space-6) var(--space-3);
-}
-
-.main:focus-visible {
-  outline: none;
-}
-
-@keyframes fade-in {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-
-.hero {
-  position: relative;
-  z-index: 1;
-  max-width: var(--reading-max);
-  margin: 0 auto var(--space-10);
-  text-align: center;
-}
-
-.title {
-  margin-bottom: var(--space-5);
-  font-size: var(--font-hero);
-  line-height: var(--line-tight);
-  font-weight: 700;
-  letter-spacing: var(--tracking-tight);
-  text-wrap: pretty;
-}
-
-.subtitle {
-  color: var(--text-2);
-  font-size: var(--font-hero-sub);
-  text-wrap: pretty;
+/* The search and the list switch from the table to cards together, by the room the page gives them */
+.catalog {
+  container: catalog / inline-size;
 }
 
 .searchRow {
@@ -60,74 +15,15 @@
 }
 
 .search {
-  position: relative;
   flex: 1 1 auto;
-  min-width: 0;
-}
-
-.searchIcon {
-  position: absolute;
-  left: clamp(var(--space-6), 2vw, var(--space-8));
-  top: 50%;
-  transform: translateY(-50%);
-  width: var(--icon-lg);
-  height: var(--icon-lg);
-  color: var(--text-3);
-  pointer-events: none;
-}
-
-.searchInput {
-  width: 100%;
-  height: var(--control-search);
-  padding: 0 clamp(46px, 5vw, 60px);
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-control);
-  background: var(--bg);
-  box-shadow: var(--shadow-1);
-  color: var(--text);
-  font-size: clamp(var(--font-md), 1.2vw, 17px);
-  outline: none;
-  text-overflow: ellipsis;
-  transition: border-color var(--dur-fast) ease;
-}
-
-@media (hover: hover) {
-  .searchInput:hover {
-    border-color: var(--text-3);
-  }
-}
-
-.searchInput:focus {
-  border-color: var(--accent);
-}
-
-.clear.clear {
-  position: absolute;
-  right: var(--pad-pill);
-  top: 50%;
-  transform: translateY(-50%);
-  width: var(--control-field);
-  height: var(--control-field);
-}
-
-.clearIcon {
-  width: var(--icon-lg);
-  height: var(--icon-lg);
 }
 
 .filterSlot {
   display: flex;
 }
 
-.linkButton {
-  composes: textButton from "./components/shared.module.css";
-  height: var(--control-sm);
-  padding: 0 var(--pad-pill);
-  border-radius: var(--radius-pill);
-  color: var(--accent-text);
-  font-weight: 500;
-}
-
+/* A short tab, with no favourites or nothing found, keeps the footer below the first screen instead of pulling it up
+   under the message */
 .results,
 .state {
   max-width: var(--content-max);
@@ -135,109 +31,26 @@
   min-height: 70dvh;
 }
 
-.state {
-  padding: var(--space-11) var(--space-3);
-  text-align: center;
-  color: var(--text-2);
-  font-size: var(--font-md);
-}
-
-.state[data-compact="true"] {
+/* A failure above rows that are already on screen stays a short line, not a screen-tall gap */
+.compact {
   min-height: 0;
   padding: var(--space-6) var(--space-3);
 }
 
-.errorCode {
-  margin-top: var(--space-2);
-  color: var(--text-3);
-  font-size: var(--font-sm);
-  font-family: var(--font-mono), monospace;
-  font-variant-numeric: tabular-nums;
-}
-
-.more {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-5);
-  margin-top: var(--space-7);
-}
-
-.moreButton {
-  composes: outline from "./components/shared.module.css";
-  display: flex;
-  align-items: center;
-  height: var(--control-lg);
-  padding: 0 var(--space-9);
-  border-radius: var(--radius-control);
-  color: var(--text);
-  font-size: var(--font-lg);
-  font-weight: 500;
-}
-
-.showing {
-  color: var(--text-3);
-  font-size: var(--font-base);
-}
-
-.shape {
-  composes: shape from "./components/shared.module.css";
-}
-
-.shapeText {
-  color: transparent;
-}
-
-.apply {
-  width: 100%;
-  height: var(--control-lg);
-  border-radius: var(--radius-control);
-  background: var(--btn);
-  color: var(--btn-ink);
-  font-size: var(--font-lg);
-  font-weight: 600;
-}
-
-@media (hover: hover) {
-  .apply:hover {
-    background: var(--btn-hover);
+/* Below the table (the 1170px it needs is measured in provider-list.module.css) the list is the phone's card, held to
+   the hero's column so it does not stretch apart */
+@container catalog (width < 1170px) {
+  .searchRow,
+  .results,
+  .state {
+    max-width: var(--reading-max);
   }
-}
 
-.fab {
-  position: fixed;
-  right: var(--space-8);
-  bottom: var(--space-8);
-  z-index: 35;
-  display: grid;
-  place-items: center;
-  width: var(--control-lg);
-  height: var(--control-lg);
-  border-radius: var(--radius-pill);
-  background: var(--btn);
-  color: var(--btn-ink);
-  animation: fade-in var(--dur-fast) ease-out;
-}
-
-@media (hover: hover) {
-  .fab:hover {
-    background: var(--btn-hover);
+  .searchRow {
+    margin-bottom: var(--space-5);
   }
-}
 
-.fabIcon {
-  width: var(--icon-lg);
-  height: var(--icon-lg);
-}
-
-@media (max-width: 1119px) {
   .filterSlot {
     display: none;
-  }
-}
-
-@media (pointer: coarse) {
-  .searchInput {
-    font-size: var(--font-lg);
   }
 }

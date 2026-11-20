@@ -1,32 +1,26 @@
-export type StatusTone = "gray" | "green" | "yellow" | "red"
+import type { ReasonCount, StaleSignal } from "@myton/ui/domain"
+import type { StatusView } from "@myton/ui/locale"
 
-export type SortField =
-  | "pubkey"
-  | "uptime"
-  | "price"
-  | "rating"
-  | "status"
-  | "freeSpace"
-  | "workingTime"
-  | "location"
+export type { SortDirection, SortField } from "@myton/ui/domain"
 
-export type SortDirection = "asc" | "desc"
+export type Translate = (key: string, options?: Record<string, unknown>) => string
 
-export interface StatusView {
-  tone: StatusTone
-  label: string
+// A row prints the share of passed checks as text; the card's status keeps it a number for its own scale
+export interface RowStatus extends Omit<StatusView, "ratio"> {
   ratio: string | null
 }
 
 export interface ProviderRow {
   pubkey: string
   keyShort: string
-  status: StatusView
+  status: RowStatus
   uptime: string
   price: string
   priceUnit: string
   rating: string
+  rank: number | null
   freeSpace: string
+  freePercent: number | null
   freeSpaceUnit: string
   location: string
   workingTime: string
@@ -43,7 +37,7 @@ export interface DetailField {
   mono?: boolean
 }
 
-export type SectionId = "provider" | "benchmarks" | "hardware" | "network" | "software"
+type SectionId = "provider" | "benchmarks" | "hardware" | "network" | "software"
 
 export interface DetailSection {
   id: SectionId
@@ -51,18 +45,10 @@ export interface DetailSection {
   fields: DetailField[]
 }
 
-export interface BreakdownItem {
-  id: string
-  tone: StatusTone
-  label: string
-  count: number
-  percent: string
-}
-
 export interface ProviderDetail {
   status: StatusView
+  reasons: ReasonCount[]
   description: string
-  checks: { valid: number; total: number; tone: StatusTone; percent: string } | null
-  breakdown: BreakdownItem[]
+  stale: StaleSignal[]
   sections: DetailSection[]
 }

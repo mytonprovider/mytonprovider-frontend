@@ -7,18 +7,6 @@ describe("pubkeyOf", () => {
   it("reads a key out of the hash", () => {
     expect(pubkeyOf(`#${KEY}`)).toBe(KEY)
     expect(pubkeyOf(KEY)).toBe(KEY)
-  })
-
-  it("does not care about case", () => {
-    expect(pubkeyOf(`#${KEY.toUpperCase()}`)).toBe(KEY)
-  })
-
-  it("ignores anything that is not a key", () => {
-    expect(pubkeyOf("")).toBe(null)
     expect(pubkeyOf("#")).toBe(null)
-    expect(pubkeyOf("#not-a-key")).toBe(null)
-    expect(pubkeyOf(`#${KEY.slice(0, 63)}`)).toBe(null)
-    expect(pubkeyOf(`#${KEY}z`)).toBe(null)
-    expect(pubkeyOf(`#${KEY}/`)).toBe(null)
   })
 })

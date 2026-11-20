@@ -1,7 +1,7 @@
 import { SlidersHorizontal } from "lucide-react"
 import { useTranslation } from "react-i18next"
+import { Button, glyphClass, IconButton } from "@myton/ui"
 import styles from "./filter-button.module.css"
-import { cx } from "@/lib/cx"
 
 interface FilterButtonProps {
   variant: "icon" | "labeled"
@@ -11,18 +11,21 @@ interface FilterButtonProps {
 
 export const FilterButton = ({ variant, active, onClick }: FilterButtonProps) => {
   const { t } = useTranslation()
-  const label = t("filters.title")
+  const label = t("ui:filters.title")
+  const look = active ? "primary" : "secondary"
+
+  if (variant === "icon") {
+    return (
+      <IconButton size="xl" variant={look} label={label} onClick={onClick}>
+        <SlidersHorizontal className={glyphClass("md")} />
+      </IconButton>
+    )
+  }
 
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      title={label}
-      aria-label={label}
-      className={cx(styles.button, styles[variant], active && styles.active)}
-    >
+    <Button variant={look} onClick={onClick} title={label} aria-label={label}>
       <SlidersHorizontal className={styles.glyph} />
-      {variant === "labeled" && <span>{label}</span>}
-    </button>
+      <span>{label}</span>
+    </Button>
   )
 }

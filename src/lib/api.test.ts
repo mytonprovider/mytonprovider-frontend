@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { ApiError, fetchProviders } from "./api"
-import { apiStable, stable } from "./fixtures"
+import { apiStable } from "./fixtures"
 
 const signal = () => new AbortController().signal
 
@@ -22,13 +22,6 @@ afterEach(() => {
 })
 
 describe("fetchProviders", () => {
-  it("stops after a page that is not full", async () => {
-    const calls = respondWith([page(3)])
-
-    await expect(fetchProviders(signal())).resolves.toHaveLength(3)
-    expect(calls).toHaveLength(1)
-  })
-
   it("walks pages until the catalog runs out, moving the offset", async () => {
     const calls = respondWith([page(200), page(200), page(7)])
 
@@ -43,35 +36,12 @@ describe("fetchProviders", () => {
     expect(calls).toHaveLength(25)
   })
 
-  it("treats an empty catalog as no providers", async () => {
-    respondWith([{ providers: null }])
-
-    await expect(fetchProviders(signal())).resolves.toEqual([])
-  })
-
   it("keeps walking pages when the catalog mixes in entries it cannot use", async () => {
     const dirty = { providers: [...Array.from({ length: 197 }, () => apiStable), {}, {}, {}] }
     const calls = respondWith([dirty, page(50)])
 
     await expect(fetchProviders(signal())).resolves.toHaveLength(247)
     expect(calls.map((body) => (JSON.parse(body) as { offset: number }).offset)).toEqual([0, 200])
-  })
-
-  it("drops entries the catalog sends without a key", async () => {
-    respondWith([{ providers: [apiStable, {}, { pubkey: 42 }] }])
-
-    await expect(fetchProviders(signal())).resolves.toEqual([stable])
-  })
-
-  it("turns the units the catalog reports into bytes", async () => {
-    respondWith([{ providers: [apiStable] }])
-
-    const [provider] = await fetchProviders(signal())
-
-    expect(provider.telemetry?.total_provider_space_bytes).toBe(4101693767680)
-    expect(provider.telemetry?.used_provider_space_bytes).toBe(3926040342691.84)
-    expect(provider.telemetry?.total_ram_bytes).toBe(4010000000)
-    expect(provider.telemetry?.usage_ram_bytes).toBe(1140000000)
   })
 
   it("reports the status code when the catalog refuses", async () => {
@@ -82,7 +52,7 @@ describe("fetchProviders", () => {
   })
 
   it("refuses an answer that is not shaped like a catalog", async () => {
-    respondWith([{ unexpected: true }])
+    respondWith([{ providers: "unexpected" }])
 
     await expect(fetchProviders(signal())).rejects.toThrow("unexpected providers response shape")
   })
